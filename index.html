@@ -1,18 +1,184 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<style>
-  h1 {
-    color: blue;
-  }
-  .box {
-    border: 1px solid black;
-    padding: 10px;
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <TITLE>Foo Or Bar</TITLE>
+
+    <style>
+        /* Reset default margins and paddings */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Set body to take full height */
+        html, body {
+            height: 100%;
+            font-family: Arial, sans-serif;
+        }
+
+        /* Container for the entire page */
+        .container {
+            background-color: #1A1915;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        /* Top section styling (10%) */
+        .top {
+            height: 10%;
+            background-color: #E9DEDE;
+            color: red;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            font-size: 1em;
+        }
+
+        /* Bottom section styling (90%) */
+        .bottom {
+            height: 90%;
+            display: flex;
+            padding: 5px;
+            background-color: black;
+            overflow: auto; /* Enable scrolling if content overflows */
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .bottom {
+                flex-direction: column;
+            }
+
+            .left, .right {
+                margin: 0 0 10px 0;
+            }
+        }
+
+        .pen-intro{
+        }
+
+        .repoLink{
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: 18%;
+          max-width: 360px;
+          min-width: 160px;
+        }
+    </style>
 </head>
 <body>
-  <h1>Hello</h1>
-  <div class="box">My styled box</div>
+    <div class="container">
+        <!-- Top Section (10%) -->
+        <div class="top">
+            <div id="fooOrBarLinksContainer" style="margin: 5px; padding: 10px; border-radius: 5px; text-align: left; width: fit-content;">
+            </div>
+        </div>
+
+        <!-- Bottom Section (90%) -->
+        <div class="bottom">
+        </div>
+    </div>
+
+    <script>
+        const fooDict = {
+            "FOO": "foo",
+            "BAR": "bar",
+        };
+        var foo_or_bar_choice = "FOO";
+        var foo_or_bar = fooDict[foo_or_bar_choice];
+
+        function BlahBlahRender() {
+            // Clear existing links and add new ones
+            fooOrBarLinksContainer.innerHTML = '';
+
+            // Add a title for the quick links section
+            const title = document.createElement("h2");
+            title.style.color = "#87736A";
+            title.style.marginBottom = "0";
+            title.style.marginRight = "10px";
+            title.style.fontSize = "16px";
+
+            // Create dropdown for Foo or Bar
+            const fooOrBarSelect = document.createElement("select");
+            fooOrBarSelect.id = "fooOrBarSelect";
+            fooOrBarSelect.style.marginLeft = "10px";
+            fooOrBarSelect.style.padding = "5px";
+            fooOrBarSelect.style.backgroundColor = "#E9DEDE";
+            fooOrBarSelect.style.color = "#000";
+            fooOrBarSelect.style.border = "1px solid #87736A";
+            fooOrBarSelect.style.borderRadius = "3px";
+
+            // Add options
+            Object.keys(fooDict).forEach(f_or_b => {
+                const option = document.createElement("option");
+                option.value = f_or_b;
+                option.textContent = f_or_b;
+                option.style.fontSize = "12px"; // Reduce font size
+                if (f_or_b === foo_or_bar_choice) {
+                    option.selected = true; // Set default selection
+                }
+                fooOrBarSelect.appendChild(option);
+            });
+            title.innerHTML = "Foo or Bar";
+
+            // Function to update title based on selection
+            function updateTitleAndData() {
+                console.log("updateTitleAndData()");
+                foo_or_bar_choice = fooOrBarSelect.value;
+                foo_or_bar = fooDict[foo_or_bar_choice];
+                console.log("foo_or_bar: ", foo_or_bar);
+
+                display_pending = 1;
+                console.log("display_pending: ", display_pending);
+            }
+
+            // Add event listener for dropdown changes
+            fooOrBarSelect.addEventListener("change", updateTitleAndData);
+
+            // Create container for title and dropdown
+            const titleContainer = document.createElement("div");
+            titleContainer.style.display = "flex";
+            titleContainer.style.alignItems = "center";
+            titleContainer.style.justifyContent = "flex-start";
+            titleContainer.appendChild(title);
+            titleContainer.appendChild(fooOrBarSelect);
+
+            fooOrBarLinksContainer.appendChild(titleContainer);
+        }
+
+        var display_pending = 1;
+        var fooOrBarLinksChart;
+
+        function renderAll() {
+            BlahBlahRender();
+            display_pending = 0;
+            console.log("display_pending: ", display_pending);
+        }
+
+        function doMaybeRenderAll() {
+            try {
+                if (display_pending) {
+                    renderAll();
+                }
+            } catch (e) {
+                console.log("Error: ", e);
+            }
+        }
+
+        window.onload = function () {
+            console.log("window.onload");
+            doMaybeRenderAll();
+
+            // Function to update charts with async data every 0.25 seconds
+            setInterval(function() {
+                doMaybeRenderAll();
+            }, 250);
+        }
+    </script>
 </body>
 </html>
