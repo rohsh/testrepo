@@ -1,0 +1,204 @@
+[
+    {
+        "format": "v1",
+        "org": "Nexthop",
+        "time": "2025/11/17 20:29",
+        "file": "platform_tests/test_platform_info.py",
+        "branch": "master",
+        "os_version": "16424-5907e81825",
+        "testbed": "gold208",
+        "duration": 349.9,
+        "failed_testcases": 0,
+        "skipped_testcases": 3,
+        "total_testcases": 6,
+        "passed_testcases": 3,
+        "topology": "t1-8",
+        "platform": "NH-4010",
+        "testcase_statuses": [
+            [
+                "test_turn_on_off_psu_and_check_psustatus[gold208-dut-ignore_particular_error_log0]",
+                "PASS"
+            ],
+            [
+                "test_thermal_control_load_invalid_format_json[gold208-dut]",
+                "PASS"
+            ],
+            [
+                "test_thermal_control_load_invalid_value_json[gold208-dut]",
+                "PASS"
+            ],
+            [
+                "test_show_platform_fanstatus_mocked[gold208-dut]",
+                "SKIP"
+            ],
+            [
+                "test_show_platform_temperature_mocked[gold208-dut-ignore_particular_error_log0]",
+                "SKIP"
+            ],
+            [
+                "test_thermal_control_fan_status[gold208-dut]",
+                "SKIP"
+            ]
+        ]
+    },
+    {
+        "format": "v1",
+        "org": "Nexthop",
+        "time": "2025/11/17 20:31",
+        "file": "snmp/test_snmp_cpu.py",
+        "branch": "master",
+        "os_version": "16424-5907e81825",
+        "testbed": "gold210",
+        "duration": 139.6,
+        "failed_testcases": 0,
+        "skipped_testcases": 0,
+        "total_testcases": 1,
+        "passed_testcases": 1,
+        "topology": "t1-8",
+        "platform": "NH-4010",
+        "testcase_statuses": [
+            [
+                "test_snmp_cpu[gold210-dut]",
+                "PASS"
+            ]
+        ]
+    },
+    {
+        "format": "v1",
+        "org": "Nexthop",
+        "time": "2025/11/17 20:38",
+        "file": "qos/test_buffer.py",
+        "branch": "master",
+        "os_version": "16424-5907e81825",
+        "testbed": "gold208",
+        "duration": 261.2,
+        "failed_testcases": 0,
+        "skipped_testcases": 17,
+        "total_testcases": 18,
+        "passed_testcases": 1,
+        "topology": "t1-8",
+        "platform": "NH-4010",
+        "testcase_statuses": [
+            [
+                "test_buffer_deployment[gold208-dut]",
+                "PASS"
+            ],
+            [
+                "test_change_speed_cable[50000-1500-15m]",
+                "SKIP"
+            ],
+            [
+                "test_change_speed_cable[50000-1500-40m]",
+                "SKIP"
+            ],
+            [
+                "test_change_speed_cable[50000-9100-15m]",
+                "SKIP"
+            ],
+            [
+                "test_change_speed_cable[50000-9100-40m]",
+                "SKIP"
+            ],
+            [
+                "test_change_speed_cable[10000-1500-15m]",
+                "SKIP"
+            ],
+            [
+                "test_change_speed_cable[10000-1500-40m]",
+                "SKIP"
+            ],
+            [
+                "test_change_speed_cable[10000-9100-15m]",
+                "SKIP"
+            ],
+            [
+                "test_change_speed_cable[10000-9100-40m]",
+                "SKIP"
+            ],
+            [
+                "test_headroom_override",
+                "SKIP"
+            ],
+            [
+                "test_shared_headroom_pool_configure",
+                "SKIP"
+            ],
+            [
+                "test_lossless_pg[3-4]",
+                "SKIP"
+            ],
+            [
+                "test_lossless_pg[6]",
+                "SKIP"
+            ],
+            [
+                "test_port_admin_down",
+                "SKIP"
+            ],
+            [
+                "test_port_auto_neg",
+                "SKIP"
+            ],
+            [
+                "test_exceeding_headroom[True]",
+                "SKIP"
+            ],
+            [
+                "test_exceeding_headroom[False]",
+                "SKIP"
+            ],
+            [
+                "test_buffer_model_test",
+                "SKIP"
+            ]
+        ]
+    },
+    {
+        "format": "v1",
+        "org": "Nexthop",
+        "time": "2025/11/17 20:39",
+        "file": "decap/test_decap.py",
+        "branch": "master",
+        "os_version": "16424-5907e81825",
+        "testbed": "gold107",
+        "duration": 148.4,
+        "failed_testcases": 1,
+        "skipped_testcases": 0,
+        "total_testcases": 1,
+        "passed_testcases": 0,
+        "topology": "t1-8",
+        "platform": "NH-4010",
+        "testcase_statuses": [
+            [
+                "test_decap",
+                "FAIL"
+            ]
+        ]
+    },
+    {
+        "format": "v1",
+        "org": "Nexthop",
+        "time": "2025/11/17 20:41",
+        "file": "tacacs/test_rw_user.py",
+        "branch": "master",
+        "os_version": "16424-5907e81825",
+        "testbed": "gold210",
+        "duration": 82.0,
+        "failed_testcases": 0,
+        "skipped_testcases": 0,
+        "total_testcases": 2,
+        "passed_testcases": 2,
+        "topology": "t1-8",
+        "platform": "NH-4010",
+        "testcase_statuses": [
+            [
+                "test_rw_user[gold210-dut]",
+                "PASS"
+            ],
+            [
+                "test_rw_user_ipv6[gold210-dut]",
+                "PASS"
+            ]
+        ]
+    }
+]

@@ -1,0 +1,263 @@
+[
+    {
+        "format": "v1",
+        "org": "Nexthop",
+        "time": "2025/11/16 08:14",
+        "file": "bgp/test_ipv6_nlri_over_ipv4.py",
+        "branch": "master",
+        "os_version": "16390-5907e81825",
+        "testbed": "humm109",
+        "duration": 430.0,
+        "failed_testcases": 1,
+        "skipped_testcases": 1,
+        "total_testcases": 2,
+        "passed_testcases": 0,
+        "topology": "t2-single-node-min",
+        "platform": "NH-5010-F-O64",
+        "testcase_statuses": [
+            [
+                "test_nlri[legacy-mode-humm109-dut]",
+                "FAIL"
+            ],
+            [
+                "test_nlri[unified-mode-humm109-dut]",
+                "SKIP"
+            ]
+        ]
+    },
+    {
+        "format": "v1",
+        "org": "Nexthop",
+        "time": "2025/11/16 08:12",
+        "file": "lldp/test_lldp_syncd.py",
+        "branch": "main",
+        "os_version": "16351-cbde8883c",
+        "testbed": "gold208",
+        "duration": 961.0,
+        "failed_testcases": 0,
+        "skipped_testcases": 0,
+        "total_testcases": 5,
+        "passed_testcases": 5,
+        "topology": "t1-8",
+        "platform": "NH-4010",
+        "testcase_statuses": [
+            [
+                "test_lldp_entry_table_content[gold208-dut]",
+                "PASS"
+            ],
+            [
+                "test_lldp_entry_table_after_syncd_orchagent[gold208-dut]",
+                "PASS"
+            ],
+            [
+                "test_lldp_entry_table_after_flap[gold208-dut]",
+                "PASS"
+            ],
+            [
+                "test_lldp_entry_table_after_lldp_restart[gold208-dut]",
+                "PASS"
+            ],
+            [
+                "test_lldp_entry_table_after_reboot[gold208-dut]",
+                "PASS"
+            ]
+        ]
+    },
+    {
+        "format": "v1",
+        "org": "Nexthop",
+        "time": "2025/11/16 08:12",
+        "file": "tacacs/test_jit_user.py",
+        "branch": "master",
+        "os_version": "16390-5907e81825",
+        "testbed": "gold207",
+        "duration": 53.4,
+        "failed_testcases": 0,
+        "skipped_testcases": 0,
+        "total_testcases": 1,
+        "passed_testcases": 1,
+        "topology": "t0-16",
+        "platform": "NH-4010",
+        "testcase_statuses": [
+            [
+                "test_jit_user[gold207-dut]",
+                "PASS"
+            ]
+        ]
+    },
+    {
+        "format": "v1",
+        "org": "Nexthop",
+        "time": "2025/11/16 08:12",
+        "file": "platform_tests/test_xcvr_info_in_db.py",
+        "branch": "main",
+        "os_version": "16351-cbde8883c",
+        "testbed": "gold232",
+        "duration": 36.0,
+        "failed_testcases": 0,
+        "skipped_testcases": 0,
+        "total_testcases": 1,
+        "passed_testcases": 1,
+        "topology": "t1-8",
+        "platform": "NH-4010",
+        "testcase_statuses": [
+            [
+                "test_xcvr_info_in_db[gold232-dut-None]",
+                "PASS"
+            ]
+        ]
+    },
+    {
+        "format": "v1",
+        "org": "Nexthop",
+        "time": "2025/11/16 08:11",
+        "file": "nh/test_tpm_remote_attestation.py",
+        "branch": "master",
+        "os_version": "16390-5907e81825",
+        "testbed": "humm109",
+        "duration": 25.3,
+        "failed_testcases": 0,
+        "skipped_testcases": 0,
+        "total_testcases": 1,
+        "passed_testcases": 1,
+        "topology": "t2-single-node-min",
+        "platform": "NH-5010-F-O64",
+        "testcase_statuses": [
+            [
+                "test_tpm_remote_attestation_succeeds[humm109-dut]",
+                "PASS"
+            ]
+        ]
+    },
+    {
+        "format": "v1",
+        "org": "Nexthop",
+        "time": "2025/11/16 08:11",
+        "file": "snmp/test_snmp_v2mib.py",
+        "branch": "main",
+        "os_version": "16351-cbde8883c",
+        "testbed": "gold107",
+        "duration": 54.3,
+        "failed_testcases": 0,
+        "skipped_testcases": 0,
+        "total_testcases": 1,
+        "passed_testcases": 1,
+        "topology": "t1-8",
+        "platform": "NH-4010",
+        "testcase_statuses": [
+            [
+                "test_snmp_v2mib[gold107-dut]",
+                "PASS"
+            ]
+        ]
+    },
+    {
+        "format": "v1",
+        "org": "Nexthop",
+        "time": "2025/11/16 08:09",
+        "file": "auditd/test_auditd.py",
+        "branch": "main",
+        "os_version": "16351-cbde8883c",
+        "testbed": "gold151",
+        "duration": 84.3,
+        "failed_testcases": 0,
+        "skipped_testcases": 10,
+        "total_testcases": 10,
+        "passed_testcases": 0,
+        "topology": "t1-8",
+        "platform": "NH-4010",
+        "testcase_statuses": [
+            [
+                "test_auditd_functionality[gold151-dut]",
+                "SKIP"
+            ],
+            [
+                "test_auditd_watchdog_functionality[gold151-dut]",
+                "SKIP"
+            ],
+            [
+                "test_modules_changes[gold151-dut]",
+                "SKIP"
+            ],
+            [
+                "test_directory_based_keys[gold151-dut]",
+                "SKIP"
+            ],
+            [
+                "test_file_based_keys[gold151-dut]",
+                "SKIP"
+            ],
+            [
+                "test_docker_config[gold151-dut]",
+                "SKIP"
+            ],
+            [
+                "test_docker_commands[gold151-dut]",
+                "SKIP"
+            ],
+            [
+                "test_auditd_host_failure[gold151-dut]",
+                "SKIP"
+            ],
+            [
+                "test_32bit_failure[gold151-dut]",
+                "SKIP"
+            ],
+            [
+                "test_rate_limit[gold151-dut]",
+                "SKIP"
+            ]
+        ]
+    },
+    {
+        "format": "v1",
+        "org": "Nexthop",
+        "time": "2025/11/16 08:08",
+        "file": "iface_loopback_action/test_iface_loopback_action.py",
+        "branch": "",
+        "os_version": "",
+        "testbed": "TBD",
+        "duration": 6.8,
+        "failed_testcases": 0,
+        "skipped_testcases": 3,
+        "total_testcases": 3,
+        "passed_testcases": 0,
+        "topology": "NA",
+        "testcase_statuses": [
+            [
+                "test_loopback_action_basic",
+                "SKIP"
+            ],
+            [
+                "test_loopback_action_port_flap",
+                "SKIP"
+            ],
+            [
+                "test_loopback_action_reload",
+                "SKIP"
+            ]
+        ]
+    },
+    {
+        "format": "v1",
+        "org": "Nexthop",
+        "time": "2025/11/16 08:05",
+        "file": "generic_config_updater/test_mmu_dynamic_threshold_config_update.py",
+        "branch": "main",
+        "os_version": "16351-cbde8883c",
+        "testbed": "gold107",
+        "duration": 52.4,
+        "failed_testcases": 0,
+        "skipped_testcases": 0,
+        "total_testcases": 1,
+        "passed_testcases": 1,
+        "topology": "t1-8",
+        "platform": "NH-4010",
+        "testcase_statuses": [
+            [
+                "test_dynamic_th_config_updates[None-replace]",
+                "PASS"
+            ]
+        ]
+    }
+]
