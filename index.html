@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <TITLE>Foo Or Bar</TITLE>
+    <TITLE>Community sonic-mgmt Test Results</TITLE>
 
-    <style>
+        <style>
         /* Reset default margins and paddings */
         * {
             margin: 0;
@@ -14,22 +14,21 @@
         }
 
         /* Set body to take full height */
-        html, body {
-            height: 100%;
+        body {
             font-family: Arial, sans-serif;
+            margin: 0;
         }
 
         /* Container for the entire page */
         .container {
-            background-color: #1A1915;
+            background-color: white;
             display: flex;
             flex-direction: column;
             height: 100%;
         }
 
-        /* Top section styling (10%) */
         .top {
-            height: 10%;
+            height: 5%;
             background-color: #E9DEDE;
             color: red;
             display: flex;
@@ -38,14 +37,43 @@
             font-size: 1em;
         }
 
-        /* Bottom section styling (90%) */
         .bottom {
-            height: 90%;
+            height: 95%;
             display: flex;
+            flex-direction: column;
             padding: 5px;
-            background-color: black;
-            overflow: auto; /* Enable scrolling if content overflows */
+            background-color: white;
+            color: black;
+            overflow: auto;
         }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        details {
+            margin-top: 10px;
+        }
+        summary {
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .nested-table {
+            margin-top: 10px;
+            width: 95%;
+        }
+        .pass { color: green; font-weight: bold; }
+        .fail { color: red; }
+        .error { color: darkred; font-weight: bold; }
 
         /* Responsive adjustments */
         @media (max-width: 768px) {
@@ -71,93 +99,736 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
-        <!-- Top Section (10%) -->
         <div class="top">
-            <div id="fooOrBarLinksContainer" style="margin: 5px; padding: 10px; border-radius: 5px; text-align: left; width: fit-content;">
+            <div id="filterContainer" style="margin: 5px; padding: 10px; border-radius: 5px; text-align: left; width: fit-content;">
             </div>
         </div>
 
-        <!-- Bottom Section (90%) -->
         <div class="bottom">
         </div>
     </div>
 
     <script>
-        const fooDict = {
-            "FOO": "foo",
-            "BAR": "bar",
-        };
-        var foo_or_bar_choice = "FOO";
-        var foo_or_bar = fooDict[foo_or_bar_choice];
+        var branches = [
+            "master",
+            "202611",
+            "202605",
+            "202511",
+            "202505",
+            "202411",
+        ];
 
-        function BlahBlahRender() {
-            // Clear existing links and add new ones
-            fooOrBarLinksContainer.innerHTML = '';
-
-            // Add a title for the quick links section
-            const title = document.createElement("h2");
-            title.style.color = "#87736A";
-            title.style.marginBottom = "0";
-            title.style.marginRight = "10px";
-            title.style.fontSize = "16px";
-
-            // Create dropdown for Foo or Bar
-            const fooOrBarSelect = document.createElement("select");
-            fooOrBarSelect.id = "fooOrBarSelect";
-            fooOrBarSelect.style.marginLeft = "10px";
-            fooOrBarSelect.style.padding = "5px";
-            fooOrBarSelect.style.backgroundColor = "#E9DEDE";
-            fooOrBarSelect.style.color = "#000";
-            fooOrBarSelect.style.border = "1px solid #87736A";
-            fooOrBarSelect.style.borderRadius = "3px";
-
-            // Add options
-            Object.keys(fooDict).forEach(f_or_b => {
-                const option = document.createElement("option");
-                option.value = f_or_b;
-                option.textContent = f_or_b;
-                option.style.fontSize = "12px"; // Reduce font size
-                if (f_or_b === foo_or_bar_choice) {
-                    option.selected = true; // Set default selection
-                }
-                fooOrBarSelect.appendChild(option);
-            });
-            title.innerHTML = "Foo or Bar";
-
-            // Function to update title based on selection
-            function updateTitleAndData() {
-                console.log("updateTitleAndData()");
-                foo_or_bar_choice = fooOrBarSelect.value;
-                foo_or_bar = fooDict[foo_or_bar_choice];
-                console.log("foo_or_bar: ", foo_or_bar);
-
-                display_pending = 1;
-                console.log("display_pending: ", display_pending);
-            }
-
-            // Add event listener for dropdown changes
-            fooOrBarSelect.addEventListener("change", updateTitleAndData);
-
-            // Create container for title and dropdown
-            const titleContainer = document.createElement("div");
-            titleContainer.style.display = "flex";
-            titleContainer.style.alignItems = "center";
-            titleContainer.style.justifyContent = "flex-start";
-            titleContainer.appendChild(title);
-            titleContainer.appendChild(fooOrBarSelect);
-
-            fooOrBarLinksContainer.appendChild(titleContainer);
+        var branch_display_expanded = {
+            "master": 1,
+            "202611": 0,
+            "202605": 0,
+            "202511": 0,
+            "202505": 0,
+            "202411": 0,
         }
 
+        var columns = [
+            ["Time", "time"],
+        ];
+
+        columns = columns.concat([
+            ["Org", "org"],
+            ["File", "file"],
+            ["Build", "os_version"],
+            ["Topo", "topology"],
+            ["Sku", "platform"],
+            ["Duration", "duration"],
+            ["Total", "total_testcases"],
+            ["Pass", "passed_testcases"],
+            ["Fail/Err", "failed_testcases"],
+            ["Skip", "skipped_testcases"],
+            ["Testcases", "testcase_statuses"],
+        ]);
+
+        var records_json_urls = [];
+        var branch_results_dict = {};
+
+        var branch_and_results_tuples_list = [];
+        var branch_regressions = [];
+        // For each records_json_urls, fetch and store the .json content if the file exists.
+        var records_json_failed = [];
+        var records_json_contents = [];
+
+        const orgList = [
+            "any",
+            "Nexthop",
+        ];
+        var org_choice = "any";
+
+        const topoList = [
+            "any",
+            "t0",
+            "t1",
+            "t2",
+        ];
+        var topo_choice = "any";
+
+        const resultsList = [
+            "any",
+            "Regression",
+            "Fail",
+            "Pass",
+        ];
+        var results_status_choice = "any";
+
+        const timeWindowList = [
+            "1 day",
+            "1 week",
+            "2 week",
+        ];
+        var time_window_choice = "1 week";
+        const timeWindowToNumDays = {
+            "1 day": 1,
+            "1 week": 7,
+            "2 week": 14,
+        };
+
+        var timeThresholds = {
+            "num_days_to_query" : 14,
+            "num_days_to_display" : 14,
+            "dates_to_query_list" : [],
+            "dates_to_display_list" : [],
+        };
+
         var display_pending = 1;
-        var fooOrBarLinksChart;
+
+        function gettimestampstring() {
+            return new Date().toISOString().replace('T', ' ').replace('Z', '') + ' ';
+        }
+
+        function generateDateStrings(numDays, includeYear) {
+            var date_strings = [];
+            var now = new Date();
+            var utcNow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+            for (var i = 0; i < (numDays + 1); i++) {
+                var date = new Date(utcNow.getFullYear(), utcNow.getMonth(), utcNow.getDate() - i + 1);
+                var date_string = date.getFullYear() + "/" + (date.getMonth() + 1) + "/" + date.getDate();
+                if (!includeYear) {
+                    date_string = date_string.substring(5);
+                }
+                date_strings.push(date_string);
+            }
+           console.log(gettimestampstring() + "date_strings: ", date_strings);
+           return date_strings;
+        }
+
+        function generateResultFileURLs() {
+            var url_prefix = "http://qp:8082/qp/shared/sonic-mgmt-tr/";
+            timeThresholds.dates_to_query_list.forEach(function(date_string) {
+                for (var j = 0; j < orgList.length; j++) {
+                    org = orgList[j];
+                    if (org == "any") {
+                        continue;
+                    }
+                    var url = url_prefix + org + "/" + date_string + "/results.json";
+                    records_json_urls.push(url);
+                }
+            });
+            console.log(gettimestampstring() + "records_json_urls: ", records_json_urls);
+        }
+
+        function getResultFileContents() {
+            console.log(gettimestampstring() + "getResultFileContents() for ", records_json_urls.length, " files");
+            records_json_urls.forEach(function(url) {
+                fetch(url)
+                    .then(response => {
+                        if (response.ok) {
+                            return response.text(); // Get as text first to see what we're getting
+                        } else {
+                            throw new Error(`HTTP ${response.status}`);
+                        }
+                    })
+                    .then(text => {
+                        try {
+                            const data = JSON.parse(text);
+                            records_json_contents.push(data);
+                            console.log(gettimestampstring() + "Parsed JSON data from", url);
+                        } catch (e) {
+                            //console.log("Raw response from", url, ":", text);
+                            //console.log("JSON parse error for", url, ":", e);
+                            //console.log("Response was:", text.substring(0, 200)); // Show first 200 chars
+                            records_json_failed.push(url);
+                        }
+                        display_pending = 1;
+                    })
+                    .catch(error => {
+                        console.log(gettimestampstring() + "Fetch error for", url, ":", error);
+                        records_json_failed.push(url);
+                        display_pending = 1;
+                    });
+            });
+        }
+
+        function generateBranchResults() {
+            branch_results_dict = {};
+            for (var i = 0; i < records_json_contents.length; i++) {
+                var data = records_json_contents[i];
+                data.forEach(function(entry) {
+                    if (entry.format != "v1") {
+                        console.log(gettimestampstring() + "entry.format !== 'v1': ", entry);
+                        return;
+                    }
+
+                    var branch = entry.branch;
+                    if (!(branch in branch_results_dict)) {
+                        branch_results_dict[branch] = [];
+                    }
+
+                    // Apply Org filter
+                    if (org_choice != "any" && entry.org != org_choice) {
+                        return;
+                    }
+
+                    // Apply Topo filter
+                    if (topo_choice != "any" && !entry.topology.startsWith(topo_choice)) {
+                        return;
+                    }
+
+                    // Apply Result Status filter
+                    if (results_status_choice != "any") {
+                        var failed_run = (parseInt(entry.failed_testcases || 0) > 0) || (parseInt(entry.errored_testcases || 0) > 0);
+                        if (results_status_choice == "Pass" && failed_run) {
+                            return;
+                        }
+
+                        if (results_status_choice == "Fail" && !failed_run) {
+                            return;
+                        }
+                    }
+
+                    // Apply time window filter
+                    display_time = entry.time.split(" ")[0].substring(5);
+                    //console.log(gettimestampstring() + "display_time: ", display_time);
+                    if (!timeThresholds["dates_to_display_list"].includes(display_time)) {
+                        return;
+                    }
+
+                    branch_results_dict[branch].push(entry);
+                });
+            }
+            //console.log(gettimestampstring() + "branch_results_dict: ", branch_results_dict);
+
+            //Convert dict back to list of tuples and sort each branch's results by time in reverse
+            branch_and_results_tuples_list =
+                Object.entries(branch_results_dict).map(([branch, results]) => {
+                    return [branch, results.sort((a, b) => new Date(b.time) - new Date(a.time))];
+                });
+
+            // rearrange the branch_and_results_tuples_list list in the order of branches in branches list
+            var rearranged_branch_and_results_tuples_list = [];
+            branches.forEach(function(branch) {
+                branch_and_results_tuples_list.forEach(function(branch_and_results) {
+                    if (branch_and_results[0] == branch) {
+                        rearranged_branch_and_results_tuples_list.push(branch_and_results);
+                    }
+                });
+            });
+            branch_and_results_tuples_list = rearranged_branch_and_results_tuples_list;
+
+            // for each branch print the number of results
+            branch_and_results_tuples_list.forEach(function(branch_and_results) {
+                console.log(gettimestampstring() + "branch: ", branch_and_results[0], " num_results: ", branch_and_results[1].length);
+            });
+
+            branch_regressions = {};
+            for (var i = 0; i < branch_and_results_tuples_list.length; i++) {
+                var branch = branch_and_results_tuples_list[i][0];
+                branch_regressions[branch] = {};
+
+                var results = branch_and_results_tuples_list[i][1];
+                results.forEach(function(entry) {
+                    var filename = entry.file;
+                    var topo = entry.topology;
+
+                    if (!(filename in branch_regressions[branch])) {
+                        branch_regressions[branch][filename] = {};
+                    }
+                    if (!(topo in branch_regressions[branch][filename])) {
+                        branch_regressions[branch][filename][topo] = {};
+                        branch_regressions[branch][filename][topo]["regression_status"] = false;
+                        branch_regressions[branch][filename][topo]["entries"] = [entry];
+                    } else if (branch_regressions[branch][filename][topo]["entries"].length == 1) {
+                        branch_regressions[branch][filename][topo]["entries"].push(recent_entry);
+
+                        var recent_entry = branch_regressions[branch][filename][topo]["entries"][0];
+                        var recent_entry_failed_run = (parseInt(recent_entry.failed_testcases || 0) > 0) || (parseInt(recent_entry.errored_testcases || 0) > 0);
+                        var current_entry_failed_run = (parseInt(entry.failed_testcases || 0) > 0) || (parseInt(entry.errored_testcases || 0) > 0);
+                        if (recent_entry_failed_run && !current_entry_failed_run) {
+                            branch_regressions[branch][filename][topo]["regression_status"] = true;
+                            branch_regressions[branch][filename][topo]["entries"] = [];
+                        }
+                    }
+                });
+            }
+            //console.log(gettimestampstring() + "branch_regressions: ", branch_regressions);
+
+            for (var branch in branch_regressions) {
+                let regression_count = 0;
+                for (var filename in branch_regressions[branch]) {
+                    for (var topo in branch_regressions[branch][filename]) {
+                        if (branch_regressions[branch][filename][topo]["regression_status"]) {
+                            regression_count += 1;
+                        }
+                    }
+                }
+                if (regression_count > 0) {
+                    console.log(gettimestampstring() + "#regressions in", branch, ":", regression_count);
+                }
+            }
+
+            if (results_status_choice == "Regression") {
+                console.log(gettimestampstring() + "results_status_choice == Regression");
+                branch_and_results_tuples_list_regression_filtered = [];
+                for (var i = 0; i < branch_and_results_tuples_list.length; i++) {
+                    var branch = branch_and_results_tuples_list[i][0];
+                    var results = branch_and_results_tuples_list[i][1];
+                    var results_regression_filtered = [];
+                    results.forEach(function(entry) {
+                        var filename = entry.file;
+                        var topo = entry.topology;
+                        if (branch_regressions[branch][filename][topo]["regression_status"]) {
+                            if (branch_regressions[branch][filename][topo]["entries"].length < 2) {
+                                branch_regressions[branch][filename][topo]["entries"].push(entry);
+                                results_regression_filtered.push(entry);
+                            }
+                        }
+                    });
+                    branch_and_results_tuples_list_regression_filtered.push([branch, results_regression_filtered]);
+                }
+                branch_and_results_tuples_list = branch_and_results_tuples_list_regression_filtered;
+                console.log(gettimestampstring() + "branch_and_results_tuples_list_regression_filtered: ", branch_and_results_tuples_list_regression_filtered);
+            };
+        }
+
+        function getOrgOptionsSubContainer() {
+            // Add a orgTitle for the quick links section
+            const orgTitle = document.createElement("h2");
+            orgTitle.style.color = "#87736A";
+            orgTitle.style.marginBottom = "0";
+            orgTitle.style.marginRight = "10px";
+            orgTitle.style.fontSize = "16px";
+            orgTitle.innerHTML = "Org";
+
+            function updateFooBarSelectTitleAndData() {
+                console.log("updateFooBarSelectTitleAndData()");
+                org_choice = orgSelect.value;
+                console.log("org_choice: ", org_choice);
+                display_pending = 1;
+                console.log(gettimestampstring() + "display_pending: ", display_pending);
+            }
+            // Create dropdown for Org
+            const orgSelect = document.createElement("select");
+            orgSelect.id = "orgSelect";
+            orgSelect.style.marginLeft = "10px";
+            orgSelect.style.padding = "5px";
+            orgSelect.style.backgroundColor = "#E9DEDE";
+            orgSelect.style.color = "#000";
+            orgSelect.style.border = "1px solid #87736A";
+            orgSelect.style.borderRadius = "3px";
+            // Add org options from orgList
+            orgList.forEach(org => {
+                const option = document.createElement("option");
+                option.value = org;
+                option.textContent = org;
+                option.style.fontSize = "12px"; // Reduce font size
+                if (org === org_choice) {
+                    option.selected = true; // Set default selection
+                }
+                orgSelect.appendChild(option);
+            });
+            // Add event listener for dropdown changes
+            orgSelect.addEventListener("change", updateFooBarSelectTitleAndData);
+
+            const orgContainer = document.createElement("div");
+            orgContainer.style.display = "flex";
+            orgContainer.style.alignItems = "center";
+            orgContainer.style.justifyContent = "flex-start";
+            orgContainer.appendChild(orgTitle);
+            orgContainer.appendChild(orgSelect);
+            return orgContainer;
+        }
+
+        function getTopoOptionsSubContainer() {
+            const topoTitle = document.createElement("h2");
+            topoTitle.style.color = "#87736A";
+            topoTitle.style.marginBottom = "0";
+            topoTitle.style.marginRight = "10px";
+            topoTitle.style.fontSize = "16px";
+            topoTitle.innerHTML = "Topology";
+
+            function updateTopoSelectTitleAndData() {
+                console.log("updateTopoSelectTitleAndData()");
+                topo_choice = topoSelect.value;
+                console.log("topo_choice: ", topo_choice);
+                display_pending = 1;
+                console.log(gettimestampstring() + "display_pending: ", display_pending);
+            }
+            // Create dropdown for topo
+            const topoSelect = document.createElement("select");
+            topoSelect.id = "topoSelect";
+            topoSelect.style.marginLeft = "10px";
+            topoSelect.style.padding = "5px";
+            topoSelect.style.backgroundColor = "#E9DEDE";
+            topoSelect.style.color = "#000";
+            topoSelect.style.border = "1px solid #87736A";
+            topoSelect.style.borderRadius = "3px";
+            // Add options for topo
+            topoList.forEach(topo => {
+                const option = document.createElement("option");
+                option.value = topo;
+                option.textContent = topo;
+                option.style.fontSize = "12px"; // Reduce font size
+                if (topo === topo_choice) {
+                    option.selected = true; // Set default selection
+                }
+                topoSelect.appendChild(option);
+            });
+            // Add event listener for dropdown changes
+            topoSelect.addEventListener("change", updateTopoSelectTitleAndData);
+
+            const topoContainer = document.createElement("div");
+            topoContainer.style.display = "flex";
+            topoContainer.style.alignItems = "center";
+            topoContainer.style.justifyContent = "flex-start";
+            topoContainer.appendChild(topoTitle);
+            topoContainer.appendChild(topoSelect);
+            return topoContainer;
+        }
+
+        function getResultStatusOptionsSubContainer() {
+            const resultStatusTitle = document.createElement("h2");
+            resultStatusTitle.style.color = "#87736A";
+            resultStatusTitle.style.marginBottom = "0";
+            resultStatusTitle.style.marginRight = "10px";
+            resultStatusTitle.style.fontSize = "16px";
+            resultStatusTitle.innerHTML = "Result Status";
+
+            function updateResultStatusSelectTitleAndData() {
+                results_status_choice = resultStatusSelect.value;
+                console.log("results_status_choice: ", results_status_choice);
+                display_pending = 1;
+                console.log(gettimestampstring() + "display_pending: ", display_pending);
+            }
+            // Create dropdown for results
+            const resultStatusSelect = document.createElement("select");
+            resultStatusSelect.id = "resultStatusSelect";
+            resultStatusSelect.style.marginLeft = "10px";
+            resultStatusSelect.style.padding = "5px";
+            resultStatusSelect.style.backgroundColor = "#E9DEDE";
+            resultStatusSelect.style.color = "#000";
+            resultStatusSelect.style.border = "1px solid #87736A";
+            resultStatusSelect.style.borderRadius = "3px";
+            // Add options for results
+            resultsList.forEach(results => {
+                const option = document.createElement("option");
+                option.value = results;
+                option.textContent = results;
+                option.style.fontSize = "12px"; // Reduce font size
+                if (results === results_status_choice) {
+                    option.selected = true; // Set default selection
+                }
+                resultStatusSelect.appendChild(option);
+            });
+            // Add event listener for dropdown changes
+            resultStatusSelect.addEventListener("change", updateResultStatusSelectTitleAndData);
+
+            const resultStatusContainer = document.createElement("div");
+            resultStatusContainer.style.display = "flex";
+            resultStatusContainer.style.alignItems = "center";
+            resultStatusContainer.style.justifyContent = "flex-start";
+            resultStatusContainer.appendChild(resultStatusTitle);
+            resultStatusContainer.appendChild(resultStatusSelect);
+            return resultStatusContainer;
+        }
+
+        function getTimeWindowOptionsSubContainer() {
+            const timeWindowTitle = document.createElement("h2");
+            timeWindowTitle.style.color = "#87736A";
+            timeWindowTitle.style.marginBottom = "0";
+            timeWindowTitle.style.marginRight = "10px";
+            timeWindowTitle.style.fontSize = "16px";
+            timeWindowTitle.innerHTML = "Query Window";
+
+            function updateTimeWindowSelectTitleAndData() {
+                time_window_choice = timeWindowSelect.value;
+                console.log("time_window_choice: ", time_window_choice);
+                timeThresholds["num_days_to_display"] = timeWindowToNumDays[time_window_choice];
+                timeThresholds["dates_to_display_list"] = generateDateStrings(timeThresholds["num_days_to_display"], false);
+
+                display_pending = 1;
+                console.log(gettimestampstring() + "display_pending: ", display_pending);
+            }
+            // Create dropdown for time window
+            const timeWindowSelect = document.createElement("select");
+            timeWindowSelect.id = "timeWindowSelect";
+            timeWindowSelect.style.marginLeft = "10px";
+            timeWindowSelect.style.padding = "5px";
+            timeWindowSelect.style.backgroundColor = "#E9DEDE";
+            timeWindowSelect.style.color = "#000";
+            timeWindowSelect.style.border = "1px solid #87736A";
+            timeWindowSelect.style.borderRadius = "3px";
+            // Add options for time window
+            timeWindowList.forEach(timeWindow => {
+                const option = document.createElement("option");
+                option.value = timeWindow;
+                option.textContent = timeWindow;
+                option.style.fontSize = "12px"; // Reduce font size
+                if (timeWindow === time_window_choice) {
+                    option.selected = true; // Set default selection
+                }
+                timeWindowSelect.appendChild(option);
+            });
+            // Add event listener for dropdown changes
+            timeWindowSelect.addEventListener("change", updateTimeWindowSelectTitleAndData);
+
+            const timeWindowContainer = document.createElement("div");
+            timeWindowContainer.style.display = "flex";
+            timeWindowContainer.style.alignItems = "center";
+            timeWindowContainer.style.justifyContent = "flex-start";
+            timeWindowContainer.appendChild(timeWindowTitle);
+            timeWindowContainer.appendChild(timeWindowSelect);
+            return timeWindowContainer;
+        }
+
+        function filtersRender() {
+            // Clear existing links and add new ones
+            filterContainer.innerHTML = '';
+
+            const filtersTitle = document.createElement("h2");
+            filtersTitle.style.color = "#87736A";
+            filtersTitle.style.marginBottom = "0";
+            filtersTitle.style.marginRight = "10px";
+            filtersTitle.style.fontSize = "16px";
+            filtersTitle.innerHTML = "Filters: ";
+
+            // Create a single horizontal container for both dropdowns
+            const innerFiltersContainer = document.createElement("div");
+            innerFiltersContainer.style.display = "flex";
+            innerFiltersContainer.style.alignItems = "center";
+            innerFiltersContainer.style.justifyContent = "flex-start";
+            innerFiltersContainer.style.gap = "20px";
+
+            innerFiltersContainer.appendChild(filtersTitle);
+            innerFiltersContainer.appendChild(getOrgOptionsSubContainer());
+            innerFiltersContainer.appendChild(getTopoOptionsSubContainer());
+            innerFiltersContainer.appendChild(getResultStatusOptionsSubContainer());
+            innerFiltersContainer.appendChild(getTimeWindowOptionsSubContainer());
+            filterContainer.appendChild(innerFiltersContainer);
+        }
+
+        function branchResultsRender() {
+            // Get reference to bottom container and clear its contents
+            var bottomContainer = document.querySelector('.bottom');
+            bottomContainer.innerHTML = '';
+
+            // In the lower section add a table for each branch.
+            for (var i = 0; i < branch_and_results_tuples_list.length; i++) {
+                var branch = branch_and_results_tuples_list[i][0];
+                var results = branch_and_results_tuples_list[i][1];
+
+                // skip if branch is not in branches list
+                if (!branches.includes(branch)) {
+                    console.log(gettimestampstring() + "Skipping unknown branch: ", branch);
+                    continue;
+                }
+
+                if (results.length === 0) {
+                    continue;
+                }
+
+                console.log(gettimestampstring() + "branch: (", branch, ") #results ", results.length);
+
+                // Add a title for the branch
+                var branchTitle = document.createElement("h2");
+                branchTitle.innerHTML = branch;
+                branchTitle.style.color = "black";
+                branchTitle.style.marginBottom = "0";
+                branchTitle.style.marginRight = "10px";
+                branchTitle.style.fontSize = "20px";
+                branchTitle.style.fontWeight = "bold";
+
+                // Create details element for expandable table
+                var details = document.createElement("details");
+                if (branch_display_expanded[branch]) {
+                    details.open = true;
+                    //console.log(`Branch ${branch} is now ${details.open ? 'expanded' : 'collapsed'}`);
+                }
+
+                // Add event listener to track when user expands/collapses
+                details.addEventListener('toggle', (function(currentBranch, details) {
+                    return function() {
+                        //console.log(`Branch ${currentBranch} is now ${details.open ? 'expanded' : 'collapsed'}`);
+                        branch_display_expanded[currentBranch] = details.open;
+                    };
+                })(branch, details));
+
+                // Create summary element
+                var summary = document.createElement("summary");
+                summary.innerHTML = "Expand";
+                summary.style.cursor = "pointer";
+                summary.style.fontWeight = "normal";
+                details.appendChild(summary);
+
+                // Create table
+                var table = document.createElement("table");
+                table.style.borderCollapse = "collapse";
+                table.style.width = "100%";
+
+                // Create header row
+                var headerRow = document.createElement("tr");
+                var headers = ["Time", "Org", "File", "Build", "Topo", "Sku", "Duration", "Total", "Pass", "Fail/Err", "Skip", "Testcases"];
+                headers.forEach(function(header) {
+                    var th = document.createElement("th");
+                    th.innerHTML = header;
+                    headerRow.appendChild(th);
+                });
+                table.appendChild(headerRow);
+
+                // Add data rows
+                results.forEach(function(entry) {
+                    var row = document.createElement("tr");
+
+                    var failed_run = (parseInt(entry.failed_testcases || 0) > 0) || (parseInt(entry.errored_testcases || 0) > 0);
+
+                    // Apply red color to the entire row if it's a failed run
+                    if (failed_run) {
+                        row.style.color = 'red';
+                    }
+
+                    // Create all cells except testcase_statuses
+                    var timeCell = document.createElement("td");
+                    timeCell.textContent = entry.time ? entry.time.substring(5) : '';
+                    row.appendChild(timeCell);
+
+                    var orgCell = document.createElement("td");
+                    orgCell.textContent = entry.org;
+                    row.appendChild(orgCell);
+
+                    var fileCell = document.createElement("td");
+                    fileCell.textContent = entry.file;
+                    row.appendChild(fileCell);
+
+                    var buildCell = document.createElement("td");
+                    buildCell.textContent = entry.os_version;
+                    row.appendChild(buildCell);
+
+                    var topoCell = document.createElement("td");
+                    topoCell.textContent = entry.topology;
+                    row.appendChild(topoCell);
+
+                    var skuCell = document.createElement("td");
+                    skuCell.textContent = entry.platform;
+                    row.appendChild(skuCell);
+
+                    var durationCell = document.createElement("td");
+                    durationCell.textContent = entry.duration;
+                    row.appendChild(durationCell);
+
+                    var totalCell = document.createElement("td");
+                    totalCell.textContent = entry.total_testcases;
+                    row.appendChild(totalCell);
+
+                    var passCell = document.createElement("td");
+                    passCell.textContent = entry.passed_testcases;
+                    row.appendChild(passCell);
+
+                    var failCell = document.createElement("td");
+                    failCell.textContent = entry.failed_testcases;
+                    row.appendChild(failCell);
+
+                    var skipCell = document.createElement("td");
+                    skipCell.textContent = entry.skipped_testcases;
+                    row.appendChild(skipCell);
+
+                    // Create testcase_statuses cell with nested collapsible table
+                    var testcaseCell = document.createElement("td");
+                    var testcaseSummary = document.createElement("summary");
+                    testcaseSummary.textContent = "Expand";
+                    testcaseSummary.style.cursor = "pointer";
+                    testcaseSummary.style.fontWeight = "normal";
+
+                    if (failed_run) {
+                        testcaseSummary.style.color = 'red';
+                    } else {
+                        testcaseSummary.style.color = 'black';
+                    }
+
+                    var testcaseDetails = document.createElement("details");
+                    testcaseDetails.appendChild(testcaseSummary);
+                    testcaseDetails.style.color = 'black';
+                    testcaseSummary.style.fontWeight = "normal";
+
+                    var nestedTable = document.createElement("table");
+                    nestedTable.className = "nested-table";
+                    nestedTable.style.marginTop = "10px";
+                    nestedTable.style.width = "95%";
+
+                    var nestedHeaderRow = document.createElement("tr");
+                    var nameHeader = document.createElement("th");
+                    nameHeader.textContent = "Testcase Name";
+                    nameHeader.style.fontWeight = "normal";
+                    var statusHeader = document.createElement("th");
+                    statusHeader.textContent = "Status";
+                    statusHeader.style.fontWeight = "normal";
+                    nestedHeaderRow.appendChild(nameHeader);
+                    nestedHeaderRow.appendChild(statusHeader);
+                    nestedTable.appendChild(nestedHeaderRow);
+
+                    if (entry.testcase_statuses && Array.isArray(entry.testcase_statuses)) {
+                        entry.testcase_statuses.forEach(function(testcase) {
+                            var nestedRow = document.createElement("tr");
+                            var nameCell = document.createElement("td");
+                            nameCell.textContent = testcase[0];
+                            var statusCell = document.createElement("td");
+                            statusCell.textContent = testcase[1];
+                            statusCell.className = testcase[1].toLowerCase();
+                            nestedRow.appendChild(nameCell);
+                            nestedRow.appendChild(statusCell);
+                            nestedTable.appendChild(nestedRow);
+                        });
+                    }
+
+                    testcaseDetails.appendChild(nestedTable);
+                    testcaseCell.appendChild(testcaseDetails);
+                    row.appendChild(testcaseCell);
+
+                    table.appendChild(row);
+                });
+
+                // Add table to details element
+                details.appendChild(table);
+
+                // Add to the bottom container
+                bottomContainer.appendChild(branchTitle);
+                bottomContainer.appendChild(details);
+
+                // Add spacing between branch sections
+                var spacer = document.createElement("div");
+                spacer.style.marginBottom = "20px";
+                bottomContainer.appendChild(spacer);
+            }
+
+            // add a break after each table
+            bottomContainer.appendChild(document.createElement("br"));
+        }
 
         function renderAll() {
-            BlahBlahRender();
+            console.log(gettimestampstring() + "renderAll()");
+
+            generateBranchResults();
+
+            filtersRender();
+            branchResultsRender();
             display_pending = 0;
-            console.log("display_pending: ", display_pending);
+            console.log(gettimestampstring() + "display_pending: ", display_pending);
         }
 
         function doMaybeRenderAll() {
@@ -170,11 +841,16 @@
             }
         }
 
+        timeThresholds["dates_to_query_list"] = generateDateStrings(timeThresholds["num_days_to_query"], true);
+        timeThresholds["dates_to_display_list"] = generateDateStrings(timeThresholds["num_days_to_display"], false);
+        console.log(gettimestampstring() + "dates_to_display_list: ", timeThresholds["dates_to_display_list"]);
+        generateResultFileURLs();
+        getResultFileContents();
+
         window.onload = function () {
-            console.log("window.onload");
+            console.log(gettimestampstring() + "window.onload");
             doMaybeRenderAll();
 
-            // Function to update charts with async data every 0.25 seconds
             setInterval(function() {
                 doMaybeRenderAll();
             }, 250);
