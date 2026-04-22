@@ -207,6 +207,38 @@
             font-size: 11px;
             color: var(--text-muted);
         }
+        .metric-card.chart-card {
+            gap: 4px;
+        }
+        .chart-card-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+        }
+        .chart-card-header .chart-rate {
+            font-size: 16px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+        .chart-card-header .chart-rate.pass { color: var(--accent-green); }
+        .chart-card-header .chart-rate.fail { color: var(--accent-red); }
+        .chart-card-header .chart-rate.warn { color: var(--accent-yellow); }
+        .chart-card-header .chart-rate-group {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+        }
+        .chart-card-header .chart-rate-sub {
+            font-size: 10.5px;
+            color: var(--text-muted);
+            font-variant-numeric: tabular-nums;
+        }
+        svg.passrate-chart {
+            width: 100%;
+            height: 78px;
+            display: block;
+            margin-top: 4px;
+        }
 
         /* --- Section card --- */
         .section {
@@ -856,12 +888,171 @@
                 return c;
             }
 
+            grid.appendChild(buildPassRateChartCard(allResults, passRate, rateClass, totalPassed, denom));
             grid.appendChild(card("Total Runs", totalRuns.toLocaleString(), "Duration: " + time_window_choice));
-            grid.appendChild(card("Pass Rate", passRate.toFixed(1) + "%", totalPassed.toLocaleString() + " / " + denom.toLocaleString() + " TCs", rateClass));
             grid.appendChild(card("Failed Runs", failedRuns.toLocaleString(), totalFailed.toLocaleString() + " fails, " + totalError.toLocaleString() + " errors", failedRuns > 0 ? 'fail' : ''));
             grid.appendChild(card("Regressions", regressionCount.toLocaleString(), "Recent passes following failures", regressionCount > 0 ? 'warn' : ''));
 
             container.appendChild(grid);
+        }
+
+        /* Per-day pass-rate chart. Groups TC counts by YYYY-MM-DD, computes
+         * pass/(pass+fail+error) per day, renders as a small SVG line+area. */
+        function buildPassRateChartCard(allResults, overallRate, rateClass, totalPassed, denom) {
+            var card = document.createElement("div");
+            card.className = "metric-card chart-card";
+
+            var header = document.createElement("div");
+            header.className = "chart-card-header";
+            header.innerHTML =
+                '<span class="metric-title">Pass Rate</span>' +
+                '<span class="chart-rate-group">' +
+                    '<span class="chart-rate ' + rateClass + '">' + overallRate.toFixed(1) + '%</span>' +
+                    '<span class="chart-rate-sub">' + totalPassed.toLocaleString() + ' / ' + denom.toLocaleString() + ' TCs</span>' +
+                '</span>';
+            card.appendChild(header);
+
+            // Group by date
+            var byDate = {};
+            allResults.forEach(function(e) {
+                var dateKey = (e.time || '').split(' ')[0];
+                if (!dateKey) return;
+                if (!byDate[dateKey]) byDate[dateKey] = { pass: 0, fail: 0, err: 0 };
+                var t = parseInt(e.total_testcases || 0);
+                var f = parseInt(e.failed_testcases || 0);
+                var er = parseInt(e.error_testcases || 0);
+                var s = parseInt(e.skipped_testcases || 0);
+                var p = Math.max(0, t - f - er - s);
+                byDate[dateKey].pass += p;
+                byDate[dateKey].fail += f;
+                byDate[dateKey].err += er;
+            });
+
+            var days = Object.keys(byDate).sort();
+            var points = days.map(function(d) {
+                var o = byDate[d];
+                var dn = o.pass + o.fail + o.err;
+                return { date: d, rate: dn > 0 ? (o.pass / dn * 100) : 0, count: dn };
+            });
+
+            card.appendChild(buildPassRateSvg(points, rateClass));
+            return card;
+        }
+
+        function buildPassRateSvg(points, rateClass) {
+            var ns = 'http://www.w3.org/2000/svg';
+            var W = 300, H = 90;
+            var padL = 24, padR = 6, padT = 6, padB = 18;
+            var pw = W - padL - padR, ph = H - padT - padB;
+
+            var svg = document.createElementNS(ns, 'svg');
+            svg.setAttribute('class', 'passrate-chart');
+            svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+            svg.setAttribute('preserveAspectRatio', 'none');
+
+            var colorVar = rateClass === 'pass' ? '--accent-green'
+                         : rateClass === 'warn' ? '--accent-yellow'
+                         : '--accent-red';
+
+            // Horizontal gridlines at 0, 50, 100
+            [0, 50, 100].forEach(function(pct) {
+                var y = padT + (1 - pct / 100) * ph;
+                var line = document.createElementNS(ns, 'line');
+                line.setAttribute('x1', padL);
+                line.setAttribute('x2', W - padR);
+                line.setAttribute('y1', y);
+                line.setAttribute('y2', y);
+                line.style.stroke = 'var(--border)';
+                line.setAttribute('stroke-width', '0.5');
+                if (pct !== 0 && pct !== 100) line.setAttribute('stroke-dasharray', '2,3');
+                svg.appendChild(line);
+
+                var label = document.createElementNS(ns, 'text');
+                label.setAttribute('x', padL - 4);
+                label.setAttribute('y', y + 3);
+                label.setAttribute('text-anchor', 'end');
+                label.setAttribute('font-size', '9');
+                label.style.fill = 'var(--text-muted)';
+                label.textContent = pct;
+                svg.appendChild(label);
+            });
+
+            if (points.length === 0) {
+                var empty = document.createElementNS(ns, 'text');
+                empty.setAttribute('x', W / 2);
+                empty.setAttribute('y', H / 2);
+                empty.setAttribute('text-anchor', 'middle');
+                empty.setAttribute('font-size', '10');
+                empty.style.fill = 'var(--text-muted)';
+                empty.textContent = 'No data';
+                svg.appendChild(empty);
+                return svg;
+            }
+
+            var xFor = function(i) {
+                if (points.length === 1) return padL + pw / 2;
+                return padL + (i / (points.length - 1)) * pw;
+            };
+            var yFor = function(r) { return padT + (1 - r / 100) * ph; };
+
+            // Area under line
+            var areaD = 'M ' + xFor(0) + ' ' + yFor(0);
+            points.forEach(function(p, i) { areaD += ' L ' + xFor(i) + ' ' + yFor(p.rate); });
+            areaD += ' L ' + xFor(points.length - 1) + ' ' + yFor(0) + ' Z';
+            var area = document.createElementNS(ns, 'path');
+            area.setAttribute('d', areaD);
+            area.setAttribute('fill-opacity', '0.18');
+            area.style.fill = 'var(' + colorVar + ')';
+            svg.appendChild(area);
+
+            // Line
+            var lineD = '';
+            points.forEach(function(p, i) {
+                lineD += (i === 0 ? 'M ' : ' L ') + xFor(i) + ' ' + yFor(p.rate);
+            });
+            var line = document.createElementNS(ns, 'path');
+            line.setAttribute('d', lineD);
+            line.setAttribute('fill', 'none');
+            line.setAttribute('stroke-width', '1.5');
+            line.style.stroke = 'var(' + colorVar + ')';
+            svg.appendChild(line);
+
+            // Point circles (with native tooltip)
+            points.forEach(function(p, i) {
+                var cx = xFor(i), cy = yFor(p.rate);
+                var circle = document.createElementNS(ns, 'circle');
+                circle.setAttribute('cx', cx);
+                circle.setAttribute('cy', cy);
+                circle.setAttribute('r', points.length > 30 ? '1.2' : '2');
+                circle.style.fill = 'var(' + colorVar + ')';
+                var title = document.createElementNS(ns, 'title');
+                title.textContent = p.date + ': ' + p.rate.toFixed(1) + '% (' + p.count + ' TCs)';
+                circle.appendChild(title);
+                svg.appendChild(circle);
+            });
+
+            // X-axis: first, middle, last day labels
+            var labelIdxs = points.length <= 3
+                ? points.map(function(_, i) { return i; })
+                : [0, Math.floor((points.length - 1) / 2), points.length - 1];
+            labelIdxs.forEach(function(i) {
+                var parts = points[i].date.split('-');
+                var txt = parts.length === 3
+                    ? (parseInt(parts[1], 10) + '/' + parseInt(parts[2], 10))
+                    : points[i].date;
+                var tx = document.createElementNS(ns, 'text');
+                tx.setAttribute('x', xFor(i));
+                tx.setAttribute('y', H - 5);
+                tx.setAttribute('text-anchor',
+                    i === 0 ? 'start' :
+                    i === points.length - 1 ? 'end' : 'middle');
+                tx.setAttribute('font-size', '9');
+                tx.style.fill = 'var(--text-muted)';
+                tx.textContent = txt;
+                svg.appendChild(tx);
+            });
+
+            return svg;
         }
 
         /* ---------- UI: Results table ---------- */
