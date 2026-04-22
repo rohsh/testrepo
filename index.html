@@ -5,130 +5,397 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <TITLE>Community sonic-mgmt Test Results</TITLE>
 
-        <style>
-        /* Reset default margins and paddings */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+    <style>
+        /* --- Theme tokens (QPN-style) --- */
+        .dark {
+            --surface-0: #0f1117;
+            --surface-1: #161922;
+            --surface-2: #1e2130;
+            --surface-3: #272b3b;
+            --border: #2e3348;
+            --border-hover: #3d4466;
+            --text-primary: #e5e7eb;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --accent-green: #4ead7a;
+            --accent-red: #d65d5d;
+            --accent-yellow: #c9a227;
+            --accent-orange: #d98a4e;
+            --accent-blue: #5a84d6;
+            --row-alt: rgba(255,255,255,0.02);
+            --row-fail: rgba(214, 93, 93, 0.12);
+        }
+        .light {
+            --surface-0: #eef0f4;
+            --surface-1: #f6f7f9;
+            --surface-2: #ebedf2;
+            --surface-3: #dfe2e8;
+            --border: #c5c9d2;
+            --border-hover: #8b92a0;
+            --text-primary: #111827;
+            --text-secondary: #374151;
+            --text-muted: #5b6370;
+            --accent-green: #2d8659;
+            --accent-red: #b84444;
+            --accent-yellow: #8a7118;
+            --accent-orange: #b06a30;
+            --accent-blue: #4570c4;
+            --row-alt: rgba(0,0,0,0.025);
+            --row-fail: rgba(184, 68, 68, 0.10);
         }
 
-        /* Set body to take full height */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body { height: 100%; }
         body {
-            font-family: Arial, sans-serif;
-            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+                Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background: var(--surface-0);
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            font-size: 13px;
         }
 
-        /* Container for the entire page */
         .container {
-            background-color: white;
             display: flex;
             flex-direction: column;
-            height: 100%;
+            min-height: 100vh;
         }
 
-        .top {
-            height: 5%;
-            background-color: #E9DEDE;
-            color: red;
+        /* --- Header --- */
+        header.topbar {
+            flex-shrink: 0;
+            background: var(--surface-1);
+            border-bottom: 1px solid var(--border);
+            padding: 10px 24px;
+        }
+        .topbar-row {
             display: flex;
             align-items: center;
-            justify-content: flex-start;
-            font-size: 1em;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .page-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .page-title .dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--accent-blue);
+        }
+        .icon-btn {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            border-radius: 8px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+        }
+        .icon-btn:hover {
+            background: var(--surface-3);
+            color: var(--text-primary);
+            border-color: var(--border-hover);
         }
 
-        .bottom {
-            height: 95%;
+        /* --- Filter bar (pill + dropdown style) --- */
+        .filters {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            flex-wrap: wrap;
+        }
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .filter-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-right: 4px;
+            font-weight: 500;
+        }
+        .pill {
+            background: var(--surface-2);
+            color: var(--text-secondary);
+            border: 1px solid transparent;
+            border-radius: 999px;
+            padding: 4px 12px;
+            font-size: 11.5px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        .pill:hover {
+            background: var(--surface-3);
+            color: var(--text-primary);
+        }
+        .pill.active {
+            background: var(--accent-blue);
+            color: #fff;
+        }
+        select.modern-select {
+            background: var(--surface-2);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            outline: none;
+            font-family: inherit;
+        }
+        select.modern-select:hover {
+            border-color: var(--border-hover);
+        }
+
+        /* --- Main content --- */
+        main.content {
+            flex: 1;
+            padding: 24px;
             display: flex;
             flex-direction: column;
-            padding: 5px;
-            background-color: white;
-            color: black;
+            gap: 20px;
             overflow: auto;
         }
 
-        table {
+        /* --- Metric cards --- */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+        }
+        @media (max-width: 900px) {
+            .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        .metric-card {
+            background: var(--surface-1);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .metric-title {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 500;
+        }
+        .metric-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.1;
+            font-variant-numeric: tabular-nums;
+        }
+        .metric-value.pass { color: var(--accent-green); }
+        .metric-value.fail { color: var(--accent-red); }
+        .metric-value.warn { color: var(--accent-yellow); }
+        .metric-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* --- Section card --- */
+        .section {
+            background: var(--surface-1);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px 16px;
+        }
+        .section-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: 0.01em;
+        }
+        .section-subtitle {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* --- Table --- */
+        .table-wrap {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        table.modern {
             border-collapse: collapse;
             width: 100%;
-            margin-bottom: 20px;
+            font-size: 12px;
         }
-        th, td {
-            border: 1px solid #ccc;
-            padding: 8px 12px;
+        table.modern th {
+            background: var(--surface-2);
+            color: var(--text-muted);
+            font-size: 10.5px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
             text-align: left;
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
         }
-        th {
-            background-color: #f4f4f4;
+        table.modern td {
+            padding: 7px 10px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-primary);
+            vertical-align: top;
         }
-        details {
-            margin-top: 10px;
+        table.modern tbody tr:nth-child(even) { background: var(--row-alt); }
+        table.modern tbody tr:last-child td { border-bottom: 0; }
+        table.modern tbody tr.fail-row { background: var(--row-fail); }
+        table.modern tbody tr:hover { background: var(--surface-2); }
+
+        td.mono, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+        td.num, .num { font-variant-numeric: tabular-nums; text-align: right; }
+        .muted { color: var(--text-muted); }
+        .secondary { color: var(--text-secondary); }
+
+        /* --- Status badges --- */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10.5px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
         }
-        summary {
+        .badge.pass { background: rgba(78,173,122,0.18); color: var(--accent-green); }
+        .badge.fail { background: rgba(214,93,93,0.18); color: var(--accent-red); }
+        .badge.skip, .badge.skipped { background: rgba(201,162,39,0.18); color: var(--accent-yellow); }
+        .badge.error { background: rgba(217,138,78,0.20); color: var(--accent-orange); }
+
+        /* --- Results bar (mini pass/fail visualization) --- */
+        .results-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 140px;
+        }
+        .bar-track {
+            flex: 1;
+            height: 6px;
+            background: var(--surface-3);
+            border-radius: 3px;
+            overflow: hidden;
+            display: flex;
+        }
+        .bar-track .seg-pass { background: var(--accent-green); height: 100%; }
+        .bar-track .seg-fail { background: var(--accent-red); height: 100%; }
+        .bar-track .seg-err  { background: var(--accent-orange); height: 100%; }
+        .bar-track .seg-skip { background: var(--accent-yellow); height: 100%; }
+        .bar-nums {
+            font-size: 10.5px;
+            font-variant-numeric: tabular-nums;
+            color: var(--text-muted);
+            white-space: nowrap;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+
+        /* --- Expand details --- */
+        details.row-details summary {
             cursor: pointer;
-            font-weight: bold;
+            font-size: 11px;
+            color: var(--accent-blue);
+            list-style: none;
+            user-select: none;
+            font-weight: 500;
         }
-        .nested-table {
-            margin-top: 10px;
-            width: 95%;
+        details.row-details summary::-webkit-details-marker { display: none; }
+        details.row-details summary:hover { text-decoration: underline; }
+        .nested-wrap {
+            margin-top: 8px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            overflow: hidden;
         }
-        .pass { color: green; font-weight: bold; }
-        .fail { color: red; }
-        .error { color: darkred; font-weight: bold; }
+        table.nested {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11.5px;
+        }
+        table.nested th {
+            background: var(--surface-3);
+            color: var(--text-muted);
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 6px 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        table.nested td {
+            padding: 5px 10px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-primary);
+        }
+        table.nested tr:last-child td { border-bottom: 0; }
 
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .bottom {
-                flex-direction: column;
-            }
-
-            .left, .right {
-                margin: 0 0 10px 0;
-            }
+        /* Empty / loading state */
+        .empty-state {
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
         }
 
-        .pen-intro{
-        }
-
-        .repoLink{
-          position: absolute;
-          top: 0;
-          right: 0;
-          width: 18%;
-          max-width: 360px;
-          min-width: 160px;
-        }
+        /* Compact scrollbars */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--surface-0); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
     </style>
 </head>
 
-<body>
+<body class="dark">
     <div class="container">
-        <div class="top">
-            <div id="filterContainer" style="margin: 5px; padding: 10px; border-radius: 5px; text-align: left; width: fit-content;">
+        <header class="topbar">
+            <div class="topbar-row" style="margin-bottom: 10px;">
+                <div class="page-title">
+                    <span class="dot"></span>
+                    Community sonic-mgmt Test Results
+                </div>
+                <div style="margin-left:auto; display:flex; gap:8px;">
+                    <button class="icon-btn" id="themeToggle" title="Toggle theme">🌙 Dark</button>
+                </div>
             </div>
-        </div>
+            <div class="topbar-row" id="filterContainer"></div>
+        </header>
 
-        <div class="bottom">
-        </div>
+        <main class="content">
+            <div id="metricsRow"></div>
+            <div id="resultsSection"></div>
+        </main>
     </div>
 
     <script>
         var branches = [
             "main",
-            "202611",
-            "202605",
             "202511",
             "202505",
-            "202411",
         ];
-
-        var branch_display_expanded = {
-            "main": 1,
-            "202611": 0,
-            "202605": 0,
-            "202511": 0,
-            "202505": 0,
-            "202411": 0,
-        }
 
         var columns = [
             ["Time", "time"],
@@ -156,18 +423,14 @@
 
         var branch_and_results_tuples_list = [];
         var branch_regressions = [];
-        // For each records_json_urls, fetch and store the .json content if the file exists.
         var records_json_failed = [];
         var records_json_contents = [];
 
         const branchList = [
             "any",
             "main",
-            "202611",
-            "202605",
             "202511",
             "202505",
-            "202411",
         ];
         var branch_choice = "any";
 
@@ -211,7 +474,7 @@
 
         var timeThresholds = {
             "num_weeks_to_query" : 6,
-            "num_days_to_display" : 42, // 6 weeks = 42 days
+            "num_days_to_display" : 42,
             "dates_to_query_list" : [],
             "dates_to_display_list" : [],
         };
@@ -244,15 +507,12 @@
             var utcNow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
             for (var i = 0; i < numWeeks; i++) {
-                // Calculate the date for the start of this week (going back i weeks)
                 var weeksBack = new Date(utcNow.getFullYear(), utcNow.getMonth(), utcNow.getDate() - (i * 7));
                 var year = weeksBack.getFullYear();
-                var month = weeksBack.getMonth() + 1; // getMonth() is 0-indexed
+                var month = weeksBack.getMonth() + 1;
 
-                // Pad month with leading zero
                 var monthStr = month < 10 ? "0" + month : "" + month;
 
-                // Calculate which week of the month this is
                 var dayOfMonth = weeksBack.getDate();
                 var weekOfMonth = Math.ceil(dayOfMonth / 7);
 
@@ -265,25 +525,20 @@
         }
 
         function dateToWeekFormat(dateStr) {
-            // dateStr is in format "M/D" (e.g., "4/21" or "4/7")
             var parts = dateStr.split("/");
             var month = parseInt(parts[0]);
             var day = parseInt(parts[1]);
 
-            // Get current year (or determine year based on current date)
             var now = new Date();
             var currentMonth = now.getMonth() + 1;
             var year = now.getFullYear();
 
-            // If the month is greater than current month, it must be from previous year
             if (month > currentMonth) {
                 year = year - 1;
             }
 
-            // Pad month with leading zero
             var monthStr = month < 10 ? "0" + month : "" + month;
 
-            // Calculate which week of the month
             var weekOfMonth = Math.ceil(day / 7);
 
             return year + "/" + monthStr + "/week" + weekOfMonth;
@@ -310,9 +565,8 @@
                 fetch(url)
                     .then(response => {
                         if (response.ok) {
-                            return response.text(); // Get as text first to see what we're getting
+                            return response.text();
                         } else {
-                            // Return object with status instead of throwing to avoid stack trace
                             return Promise.reject({ status: response.status, url: url });
                         }
                     })
@@ -322,15 +576,11 @@
                             records_json_contents.push(data);
                             console.log(gettimestampstring() + "Parsed JSON data from", url);
                         } catch (e) {
-                            //console.log("Raw response from", url, ":", text);
-                            //console.log("JSON parse error for", url, ":", e);
-                            //console.log("Response was:", text.substring(0, 200)); // Show first 200 chars
                             records_json_failed.push(url);
                         }
                         display_pending = 1;
                     })
                     .catch(error => {
-                        // Only log simple message for 404, suppress stack trace
                         if (error.status === 404) {
                             console.log(gettimestampstring() + "File not found (404):", error.url);
                         } else if (error.status) {
@@ -359,22 +609,18 @@
                         branch_results_dict[branch] = [];
                     }
 
-                    // Apply Branch filter
                     if (branch_choice != "any" && entry.branch != branch_choice) {
                         return;
                     }
 
-                    // Apply Org filter
                     if (org_choice != "any" && entry.org != org_choice) {
                         return;
                     }
 
-                    // Apply Topo filter
                     if (topo_choice != "any" && !entry.topology.startsWith(topo_choice)) {
                         return;
                     }
 
-                    // Apply Result Status filter
                     if (results_status_choice != "any") {
                         var failed_run = (parseInt(entry.failed_testcases || 0) > 0) || (parseInt(entry.error_testcases || 0) > 0);
                         if (results_status_choice == "Pass" && failed_run) {
@@ -386,7 +632,6 @@
                         }
                     }
 
-                    // Apply time window filter based on number of days
                     var entryDate = new Date(entry.time.split(" ")[0]);
                     var now = new Date();
                     var daysDiff = Math.floor((now - entryDate) / (1000 * 60 * 60 * 24));
@@ -397,15 +642,12 @@
                     branch_results_dict[branch].push(entry);
                 });
             }
-            //console.log(gettimestampstring() + "branch_results_dict: ", branch_results_dict);
 
-            //Convert dict back to list of tuples and sort each branch's results by time in reverse
             branch_and_results_tuples_list =
                 Object.entries(branch_results_dict).map(([branch, results]) => {
                     return [branch, results.sort((a, b) => new Date(b.time) - new Date(a.time))];
                 });
 
-            // rearrange the branch_and_results_tuples_list list in the order of branches in branches list
             var rearranged_branch_and_results_tuples_list = [];
             branches.forEach(function(branch) {
                 branch_and_results_tuples_list.forEach(function(branch_and_results) {
@@ -416,7 +658,6 @@
             });
             branch_and_results_tuples_list = rearranged_branch_and_results_tuples_list;
 
-            // for each branch print the number of results
             branch_and_results_tuples_list.forEach(function(branch_and_results) {
                 console.log(gettimestampstring() + "branch: ", branch_and_results[0], " num_results: ", branch_and_results[1].length);
             });
@@ -451,7 +692,6 @@
                     }
                 });
             }
-            //console.log(gettimestampstring() + "branch_regressions: ", branch_regressions);
 
             for (var branch in branch_regressions) {
                 let regression_count = 0;
@@ -491,453 +731,358 @@
             };
         }
 
-        function getBranchOptionsSubContainer() {
-            const branchTitle = document.createElement("h2");
-            branchTitle.style.color = "#87736A";
-            branchTitle.style.marginBottom = "0";
-            branchTitle.style.marginRight = "10px";
-            branchTitle.style.fontSize = "16px";
-            branchTitle.innerHTML = "Branch";
+        /* ---------- UI: Filter bar ---------- */
+        function makeDropdownGroup(label, optionsArr, currentValue, onChange) {
+            var group = document.createElement("div");
+            group.className = "filter-group";
 
-            function updateBranchSelectTitleAndData() {
-                console.log("updateBranchSelectTitleAndData()");
-                branch_choice = branchSelect.value;
-                console.log("branch_choice: ", branch_choice);
-                display_pending = 1;
-                console.log(gettimestampstring() + "display_pending: ", display_pending);
-            }
-            // Create dropdown for Branch
-            const branchSelect = document.createElement("select");
-            branchSelect.id = "branchSelect";
-            branchSelect.style.marginLeft = "10px";
-            branchSelect.style.padding = "5px";
-            branchSelect.style.backgroundColor = "#E9DEDE";
-            branchSelect.style.color = "#000";
-            branchSelect.style.border = "1px solid #87736A";
-            branchSelect.style.borderRadius = "3px";
-            // Add branch options from branchList
-            branchList.forEach(branch => {
-                const option = document.createElement("option");
-                option.value = branch;
-                option.textContent = branch;
-                option.style.fontSize = "12px"; // Reduce font size
-                if (branch === branch_choice) {
-                    option.selected = true; // Set default selection
-                }
-                branchSelect.appendChild(option);
+            var lbl = document.createElement("span");
+            lbl.className = "filter-label";
+            lbl.textContent = label;
+            group.appendChild(lbl);
+
+            var sel = document.createElement("select");
+            sel.className = "modern-select";
+            optionsArr.forEach(function(opt) {
+                var optEl = document.createElement("option");
+                optEl.value = opt;
+                optEl.textContent = opt;
+                if (opt === currentValue) optEl.selected = true;
+                sel.appendChild(optEl);
             });
-            // Add event listener for dropdown changes
-            branchSelect.addEventListener("change", updateBranchSelectTitleAndData);
-
-            const branchContainer = document.createElement("div");
-            branchContainer.style.display = "flex";
-            branchContainer.style.alignItems = "center";
-            branchContainer.style.justifyContent = "flex-start";
-            branchContainer.appendChild(branchTitle);
-            branchContainer.appendChild(branchSelect);
-            return branchContainer;
+            sel.addEventListener("change", function() {
+                onChange(sel.value);
+                display_pending = 1;
+            });
+            group.appendChild(sel);
+            return group;
         }
 
-        function getOrgOptionsSubContainer() {
-            // Add a orgTitle for the quick links section
-            const orgTitle = document.createElement("h2");
-            orgTitle.style.color = "#87736A";
-            orgTitle.style.marginBottom = "0";
-            orgTitle.style.marginRight = "10px";
-            orgTitle.style.fontSize = "16px";
-            orgTitle.innerHTML = "Org";
+        function makePillGroup(label, optionsArr, currentValue, onChange) {
+            var group = document.createElement("div");
+            group.className = "filter-group";
 
-            function updateFooBarSelectTitleAndData() {
-                console.log("updateFooBarSelectTitleAndData()");
-                org_choice = orgSelect.value;
-                console.log("org_choice: ", org_choice);
-                display_pending = 1;
-                console.log(gettimestampstring() + "display_pending: ", display_pending);
-            }
-            // Create dropdown for Org
-            const orgSelect = document.createElement("select");
-            orgSelect.id = "orgSelect";
-            orgSelect.style.marginLeft = "10px";
-            orgSelect.style.padding = "5px";
-            orgSelect.style.backgroundColor = "#E9DEDE";
-            orgSelect.style.color = "#000";
-            orgSelect.style.border = "1px solid #87736A";
-            orgSelect.style.borderRadius = "3px";
-            // Add org options from orgList
-            orgList.forEach(org => {
-                const option = document.createElement("option");
-                option.value = org;
-                option.textContent = org;
-                option.style.fontSize = "12px"; // Reduce font size
-                if (org === org_choice) {
-                    option.selected = true; // Set default selection
-                }
-                orgSelect.appendChild(option);
+            var lbl = document.createElement("span");
+            lbl.className = "filter-label";
+            lbl.textContent = label;
+            group.appendChild(lbl);
+
+            optionsArr.forEach(function(opt) {
+                var btn = document.createElement("button");
+                btn.className = "pill" + (opt === currentValue ? " active" : "");
+                btn.textContent = opt;
+                btn.addEventListener("click", function() {
+                    onChange(opt);
+                    display_pending = 1;
+                });
+                group.appendChild(btn);
             });
-            // Add event listener for dropdown changes
-            orgSelect.addEventListener("change", updateFooBarSelectTitleAndData);
-
-            const orgContainer = document.createElement("div");
-            orgContainer.style.display = "flex";
-            orgContainer.style.alignItems = "center";
-            orgContainer.style.justifyContent = "flex-start";
-            orgContainer.appendChild(orgTitle);
-            orgContainer.appendChild(orgSelect);
-            return orgContainer;
-        }
-
-        function getTopoOptionsSubContainer() {
-            const topoTitle = document.createElement("h2");
-            topoTitle.style.color = "#87736A";
-            topoTitle.style.marginBottom = "0";
-            topoTitle.style.marginRight = "10px";
-            topoTitle.style.fontSize = "16px";
-            topoTitle.innerHTML = "Topology";
-
-            function updateTopoSelectTitleAndData() {
-                console.log("updateTopoSelectTitleAndData()");
-                topo_choice = topoSelect.value;
-                console.log("topo_choice: ", topo_choice);
-                display_pending = 1;
-                console.log(gettimestampstring() + "display_pending: ", display_pending);
-            }
-            // Create dropdown for topo
-            const topoSelect = document.createElement("select");
-            topoSelect.id = "topoSelect";
-            topoSelect.style.marginLeft = "10px";
-            topoSelect.style.padding = "5px";
-            topoSelect.style.backgroundColor = "#E9DEDE";
-            topoSelect.style.color = "#000";
-            topoSelect.style.border = "1px solid #87736A";
-            topoSelect.style.borderRadius = "3px";
-            // Add options for topo
-            topoList.forEach(topo => {
-                const option = document.createElement("option");
-                option.value = topo;
-                option.textContent = topo;
-                option.style.fontSize = "12px"; // Reduce font size
-                if (topo === topo_choice) {
-                    option.selected = true; // Set default selection
-                }
-                topoSelect.appendChild(option);
-            });
-            // Add event listener for dropdown changes
-            topoSelect.addEventListener("change", updateTopoSelectTitleAndData);
-
-            const topoContainer = document.createElement("div");
-            topoContainer.style.display = "flex";
-            topoContainer.style.alignItems = "center";
-            topoContainer.style.justifyContent = "flex-start";
-            topoContainer.appendChild(topoTitle);
-            topoContainer.appendChild(topoSelect);
-            return topoContainer;
-        }
-
-        function getResultStatusOptionsSubContainer() {
-            const resultStatusTitle = document.createElement("h2");
-            resultStatusTitle.style.color = "#87736A";
-            resultStatusTitle.style.marginBottom = "0";
-            resultStatusTitle.style.marginRight = "10px";
-            resultStatusTitle.style.fontSize = "16px";
-            resultStatusTitle.innerHTML = "Result Status";
-
-            function updateResultStatusSelectTitleAndData() {
-                results_status_choice = resultStatusSelect.value;
-                console.log("results_status_choice: ", results_status_choice);
-                display_pending = 1;
-                console.log(gettimestampstring() + "display_pending: ", display_pending);
-            }
-            // Create dropdown for results
-            const resultStatusSelect = document.createElement("select");
-            resultStatusSelect.id = "resultStatusSelect";
-            resultStatusSelect.style.marginLeft = "10px";
-            resultStatusSelect.style.padding = "5px";
-            resultStatusSelect.style.backgroundColor = "#E9DEDE";
-            resultStatusSelect.style.color = "#000";
-            resultStatusSelect.style.border = "1px solid #87736A";
-            resultStatusSelect.style.borderRadius = "3px";
-            // Add options for results
-            resultsList.forEach(results => {
-                const option = document.createElement("option");
-                option.value = results;
-                option.textContent = results;
-                option.style.fontSize = "12px"; // Reduce font size
-                if (results === results_status_choice) {
-                    option.selected = true; // Set default selection
-                }
-                resultStatusSelect.appendChild(option);
-            });
-            // Add event listener for dropdown changes
-            resultStatusSelect.addEventListener("change", updateResultStatusSelectTitleAndData);
-
-            const resultStatusContainer = document.createElement("div");
-            resultStatusContainer.style.display = "flex";
-            resultStatusContainer.style.alignItems = "center";
-            resultStatusContainer.style.justifyContent = "flex-start";
-            resultStatusContainer.appendChild(resultStatusTitle);
-            resultStatusContainer.appendChild(resultStatusSelect);
-            return resultStatusContainer;
-        }
-
-        function getTimeWindowOptionsSubContainer() {
-            const timeWindowTitle = document.createElement("h2");
-            timeWindowTitle.style.color = "#87736A";
-            timeWindowTitle.style.marginBottom = "0";
-            timeWindowTitle.style.marginRight = "10px";
-            timeWindowTitle.style.fontSize = "16px";
-            timeWindowTitle.innerHTML = "Query Window";
-
-            function updateTimeWindowSelectTitleAndData() {
-                time_window_choice = timeWindowSelect.value;
-                console.log("time_window_choice: ", time_window_choice);
-                timeThresholds["num_days_to_display"] = timeWindowToNumDays[time_window_choice];
-
-                display_pending = 1;
-                console.log(gettimestampstring() + "display_pending: ", display_pending);
-            }
-            // Create dropdown for time window
-            const timeWindowSelect = document.createElement("select");
-            timeWindowSelect.id = "timeWindowSelect";
-            timeWindowSelect.style.marginLeft = "10px";
-            timeWindowSelect.style.padding = "5px";
-            timeWindowSelect.style.backgroundColor = "#E9DEDE";
-            timeWindowSelect.style.color = "#000";
-            timeWindowSelect.style.border = "1px solid #87736A";
-            timeWindowSelect.style.borderRadius = "3px";
-            // Add options for time window
-            timeWindowList.forEach(timeWindow => {
-                const option = document.createElement("option");
-                option.value = timeWindow;
-                option.textContent = timeWindow;
-                option.style.fontSize = "12px"; // Reduce font size
-                if (timeWindow === time_window_choice) {
-                    option.selected = true; // Set default selection
-                }
-                timeWindowSelect.appendChild(option);
-            });
-            // Add event listener for dropdown changes
-            timeWindowSelect.addEventListener("change", updateTimeWindowSelectTitleAndData);
-
-            const timeWindowContainer = document.createElement("div");
-            timeWindowContainer.style.display = "flex";
-            timeWindowContainer.style.alignItems = "center";
-            timeWindowContainer.style.justifyContent = "flex-start";
-            timeWindowContainer.appendChild(timeWindowTitle);
-            timeWindowContainer.appendChild(timeWindowSelect);
-            return timeWindowContainer;
+            return group;
         }
 
         function filtersRender() {
-            // Clear existing links and add new ones
+            var filterContainer = document.getElementById("filterContainer");
             filterContainer.innerHTML = '';
 
-            const filtersTitle = document.createElement("h2");
-            filtersTitle.style.color = "#87736A";
-            filtersTitle.style.marginBottom = "0";
-            filtersTitle.style.marginRight = "10px";
-            filtersTitle.style.fontSize = "16px";
-            filtersTitle.innerHTML = "Filters: ";
+            var filtersWrap = document.createElement("div");
+            filtersWrap.className = "filters";
 
-            // Create a single horizontal container for both dropdowns
-            const innerFiltersContainer = document.createElement("div");
-            innerFiltersContainer.style.display = "flex";
-            innerFiltersContainer.style.alignItems = "center";
-            innerFiltersContainer.style.justifyContent = "flex-start";
-            innerFiltersContainer.style.gap = "20px";
+            filtersWrap.appendChild(makeDropdownGroup(
+                "Duration", timeWindowList, time_window_choice,
+                function(v) {
+                    time_window_choice = v;
+                    timeThresholds["num_days_to_display"] = timeWindowToNumDays[v];
+                }
+            ));
+            filtersWrap.appendChild(makeDropdownGroup(
+                "Branch", branchList, branch_choice,
+                function(v) { branch_choice = v; }
+            ));
+            filtersWrap.appendChild(makeDropdownGroup(
+                "Topology", topoList, topo_choice,
+                function(v) { topo_choice = v; }
+            ));
+            filtersWrap.appendChild(makeDropdownGroup(
+                "Status", resultsList, results_status_choice,
+                function(v) { results_status_choice = v; }
+            ));
+            filtersWrap.appendChild(makeDropdownGroup(
+                "Org", orgList, org_choice,
+                function(v) { org_choice = v; }
+            ));
+            filterContainer.appendChild(filtersWrap);
+        }
 
-            innerFiltersContainer.appendChild(filtersTitle);
-            innerFiltersContainer.appendChild(getBranchOptionsSubContainer());
-            innerFiltersContainer.appendChild(getTopoOptionsSubContainer());
-            innerFiltersContainer.appendChild(getResultStatusOptionsSubContainer());
-            innerFiltersContainer.appendChild(getTimeWindowOptionsSubContainer());
-            innerFiltersContainer.appendChild(getOrgOptionsSubContainer());
-            filterContainer.appendChild(innerFiltersContainer);
+        /* ---------- UI: Metrics ---------- */
+        function metricsRender(allResults) {
+            var container = document.getElementById("metricsRow");
+            container.innerHTML = '';
+
+            var totalRuns = allResults.length;
+            var totalPassed = 0, totalFailed = 0, totalError = 0, totalSkipped = 0;
+            var failedRuns = 0;
+            allResults.forEach(function(e) {
+                var f = parseInt(e.failed_testcases || 0);
+                var er = parseInt(e.error_testcases || 0);
+                var s = parseInt(e.skipped_testcases || 0);
+                var t = parseInt(e.total_testcases || 0);
+                var p = Math.max(0, t - f - er - s);
+                totalPassed += p; totalFailed += f; totalError += er; totalSkipped += s;
+                if (f > 0 || er > 0) failedRuns += 1;
+            });
+            var denom = totalPassed + totalFailed + totalError;
+            var passRate = denom > 0 ? (totalPassed / denom * 100) : 0;
+            var rateClass = passRate >= 90 ? 'pass' : passRate >= 70 ? 'warn' : 'fail';
+
+            var regressionCount = 0;
+            for (var br in branch_regressions) {
+                for (var fn in branch_regressions[br]) {
+                    for (var tp in branch_regressions[br][fn]) {
+                        if (branch_regressions[br][fn][tp]["regression_status"]) regressionCount++;
+                    }
+                }
+            }
+
+            var grid = document.createElement("div");
+            grid.className = "metrics-grid";
+
+            function card(title, value, sub, cls) {
+                var c = document.createElement("div");
+                c.className = "metric-card";
+                c.innerHTML =
+                    '<div class="metric-title">' + title + '</div>' +
+                    '<div class="metric-value' + (cls ? ' ' + cls : '') + '">' + value + '</div>' +
+                    (sub ? '<div class="metric-sub">' + sub + '</div>' : '');
+                return c;
+            }
+
+            grid.appendChild(card("Total Runs", totalRuns.toLocaleString(), "Duration: " + time_window_choice));
+            grid.appendChild(card("Pass Rate", passRate.toFixed(1) + "%", totalPassed.toLocaleString() + " / " + denom.toLocaleString() + " TCs", rateClass));
+            grid.appendChild(card("Failed Runs", failedRuns.toLocaleString(), totalFailed.toLocaleString() + " fails, " + totalError.toLocaleString() + " errors", failedRuns > 0 ? 'fail' : ''));
+            grid.appendChild(card("Regressions", regressionCount.toLocaleString(), "Recent passes following failures", regressionCount > 0 ? 'warn' : ''));
+
+            container.appendChild(grid);
+        }
+
+        /* ---------- UI: Results table ---------- */
+        function statusBadge(statusRaw) {
+            var s = String(statusRaw || '').toUpperCase();
+            var cls = s.toLowerCase();
+            if (!['PASS','FAIL','SKIP','SKIPPED','ERROR'].includes(s)) cls = '';
+            return '<span class="badge ' + cls + '">' + (statusRaw || '—') + '</span>';
+        }
+
+        function makeResultsBar(entry) {
+            var total = parseInt(entry.total_testcases || 0);
+            var fail = parseInt(entry.failed_testcases || 0);
+            var err = parseInt(entry.error_testcases || 0);
+            var skip = parseInt(entry.skipped_testcases || 0);
+            var pass = Math.max(0, total - fail - err - skip);
+            if (total === 0) {
+                return '<span class="muted">—</span>';
+            }
+            var pPct = (pass/total)*100, fPct = (fail/total)*100, ePct = (err/total)*100, sPct = (skip/total)*100;
+            var html = '<div class="results-bar" title="' + pass + 'P ' + fail + 'F ' + err + 'E ' + skip + 'S / ' + total + '">';
+            html += '<div class="bar-track">';
+            if (pPct > 0) html += '<div class="seg-pass" style="width:' + pPct + '%"></div>';
+            if (fPct > 0) html += '<div class="seg-fail" style="width:' + fPct + '%"></div>';
+            if (ePct > 0) html += '<div class="seg-err"  style="width:' + ePct + '%"></div>';
+            if (sPct > 0) html += '<div class="seg-skip" style="width:' + sPct + '%"></div>';
+            html += '</div>';
+            html += '<span class="bar-nums">';
+            html += '<span style="color:var(--accent-green)">' + pass + '</span>';
+            if (fail > 0) html += '<span style="color:var(--accent-red)">/' + fail + '</span>';
+            if (err > 0)  html += '<span style="color:var(--accent-orange)">/' + err + '</span>';
+            html += '<span class="muted">/' + total + '</span>';
+            html += '</span></div>';
+            return html;
         }
 
         function branchResultsRender() {
-            // Get reference to bottom container and clear its contents
-            var bottomContainer = document.querySelector('.bottom');
-            bottomContainer.innerHTML = '';
+            var section = document.getElementById("resultsSection");
+            section.innerHTML = '';
 
-            // Combine all results from all branches into a single list
             var allResults = [];
-            var totalCount = 0;
             for (var i = 0; i < branch_and_results_tuples_list.length; i++) {
                 var branch = branch_and_results_tuples_list[i][0];
                 var results = branch_and_results_tuples_list[i][1];
-
-                // skip if branch is not in branches list
-                if (!branches.includes(branch)) {
-                    console.log(gettimestampstring() + "Skipping unknown branch: ", branch);
-                    continue;
-                }
-
-                totalCount += results.length;
+                if (!branches.includes(branch)) continue;
                 allResults = allResults.concat(results);
             }
+            allResults.sort((a, b) => new Date(b.time) - new Date(a.time));
+
+            // render metrics first
+            metricsRender(allResults);
+
+            // Card wrapper for the table
+            var card = document.createElement("div");
+            card.className = "section";
+
+            var header = document.createElement("div");
+            header.className = "section-header";
+            header.innerHTML =
+                '<div class="section-title">Test Results</div>' +
+                '<div class="section-subtitle">' + allResults.length.toLocaleString() + ' runs</div>';
+            card.appendChild(header);
 
             if (allResults.length === 0) {
-                console.log(gettimestampstring() + "No results to display");
+                var empty = document.createElement("div");
+                empty.className = "empty-state";
+                empty.textContent = "No test results match the current filters.";
+                card.appendChild(empty);
+                section.appendChild(card);
                 return;
             }
 
-            // Sort all results by time in reverse (most recent first)
-            allResults.sort((a, b) => new Date(b.time) - new Date(a.time));
+            var wrap = document.createElement("div");
+            wrap.className = "table-wrap";
 
-            console.log(gettimestampstring() + "Total results: ", allResults.length);
-
-            // Add a title for the combined results
-            var resultsTitle = document.createElement("h2");
-            resultsTitle.innerHTML = "Test Results";
-            resultsTitle.style.color = "black";
-            resultsTitle.style.marginBottom = "0";
-            resultsTitle.style.marginRight = "10px";
-            resultsTitle.style.fontSize = "20px";
-            resultsTitle.style.fontWeight = "bold";
-
-            // Create table
             var table = document.createElement("table");
-            table.style.borderCollapse = "collapse";
-            table.style.width = "100%";
+            table.className = "modern";
 
-            // Create header row
+            var thead = document.createElement("thead");
             var headerRow = document.createElement("tr");
-            var headers = ["Time", "Branch", "Org", "File", "Build", "Topo", "Sku", "Duration", "Total", "Error", "Fail", "Skip", "Testcases"];
-            headers.forEach(function(header) {
+            var headers = ["Status", "Time", "Branch", "Org", "File", "Build", "Topo", "Sku", "Duration", "Results", "Testcases"];
+            headers.forEach(function(h) {
                 var th = document.createElement("th");
-                th.innerHTML = header;
+                th.textContent = h;
                 headerRow.appendChild(th);
             });
-            table.appendChild(headerRow);
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
 
-            // Add data rows for all results
+            var tbody = document.createElement("tbody");
+
             allResults.forEach(function(entry) {
-                var row = document.createElement("tr");
-
                 var failed_run = (parseInt(entry.failed_testcases || 0) > 0) || (parseInt(entry.error_testcases || 0) > 0);
+                var row = document.createElement("tr");
+                if (failed_run) row.className = 'fail-row';
 
-                // Apply red color to the entire row if it's a failed run
-                if (failed_run) {
-                    row.style.color = 'red';
-                }
+                // Status badge
+                var statusCell = document.createElement("td");
+                statusCell.innerHTML = statusBadge(failed_run ? 'FAIL' : 'PASS');
+                row.appendChild(statusCell);
 
-                // Create all cells except testcase_statuses
+                // Time
                 var timeCell = document.createElement("td");
+                timeCell.className = "mono muted";
+                timeCell.style.whiteSpace = "nowrap";
                 timeCell.textContent = entry.time ? entry.time.substring(5) : '';
                 row.appendChild(timeCell);
 
+                // Branch
                 var branchCell = document.createElement("td");
-                branchCell.textContent = entry.branch;
+                branchCell.className = "mono secondary";
+                branchCell.textContent = entry.branch || '';
                 row.appendChild(branchCell);
 
+                // Org
                 var orgCell = document.createElement("td");
-                orgCell.textContent = entry.org;
+                orgCell.className = "muted";
+                orgCell.textContent = entry.org || '';
                 row.appendChild(orgCell);
 
+                // File
                 var fileCell = document.createElement("td");
-                fileCell.textContent = entry.file;
+                fileCell.className = "mono";
+                fileCell.title = entry.file || '';
+                fileCell.style.maxWidth = "260px";
+                fileCell.style.overflow = "hidden";
+                fileCell.style.textOverflow = "ellipsis";
+                fileCell.style.whiteSpace = "nowrap";
+                fileCell.textContent = entry.file || '';
                 row.appendChild(fileCell);
 
+                // Build
                 var buildCell = document.createElement("td");
-                buildCell.textContent = entry.os_version;
+                buildCell.className = "mono muted";
+                buildCell.textContent = entry.os_version || '';
                 row.appendChild(buildCell);
 
+                // Topo
                 var topoCell = document.createElement("td");
-                topoCell.textContent = entry.topology;
+                topoCell.className = "secondary";
+                topoCell.textContent = entry.topology || '';
                 row.appendChild(topoCell);
 
+                // Sku
                 var skuCell = document.createElement("td");
-                skuCell.textContent = entry.hwsku;
+                skuCell.className = "muted";
+                skuCell.textContent = entry.hwsku || '';
                 row.appendChild(skuCell);
 
+                // Duration
                 var durationCell = document.createElement("td");
-                durationCell.textContent = entry.duration;
+                durationCell.className = "num muted";
+                durationCell.textContent = entry.duration || '';
                 row.appendChild(durationCell);
 
-                var totalCell = document.createElement("td");
-                totalCell.textContent = entry.total_testcases;
-                row.appendChild(totalCell);
+                // Results bar (replaces separate Total / Error / Fail / Skip columns)
+                var resultsCell = document.createElement("td");
+                resultsCell.innerHTML = makeResultsBar(entry);
+                row.appendChild(resultsCell);
 
-                var errorCell = document.createElement("td");
-                errorCell.textContent = entry.error_testcases;
-                row.appendChild(errorCell);
-
-                var failCell = document.createElement("td");
-                failCell.textContent = entry.failed_testcases;
-                row.appendChild(failCell);
-
-                var skipCell = document.createElement("td");
-                skipCell.textContent = entry.skipped_testcases;
-                row.appendChild(skipCell);
-
-                // Create testcase_statuses cell with nested collapsible table
-                var testcaseCell = document.createElement("td");
-                var testcaseSummary = document.createElement("summary");
-                testcaseSummary.textContent = "Expand";
-                testcaseSummary.style.cursor = "pointer";
-                testcaseSummary.style.fontWeight = "normal";
-
-                if (failed_run) {
-                    testcaseSummary.style.color = 'red';
-                } else {
-                    testcaseSummary.style.color = 'black';
-                }
-
-                var testcaseDetails = document.createElement("details");
-                testcaseDetails.appendChild(testcaseSummary);
-                testcaseDetails.style.color = 'black';
-                testcaseSummary.style.fontWeight = "normal";
-
-                // Add toggle event listener to change text between Expand/Collapse
-                testcaseDetails.addEventListener('toggle', function() {
-                    if (testcaseDetails.open) {
-                        testcaseSummary.textContent = "Collapse";
-                    } else {
-                        testcaseSummary.textContent = "Expand";
-                    }
+                // Testcases expand/collapse
+                var tcCell = document.createElement("td");
+                var details = document.createElement("details");
+                details.className = "row-details";
+                var summary = document.createElement("summary");
+                summary.textContent = "▸ Expand";
+                details.appendChild(summary);
+                details.addEventListener('toggle', function() {
+                    summary.textContent = details.open ? "▾ Collapse" : "▸ Expand";
                 });
 
+                var nestedWrap = document.createElement("div");
+                nestedWrap.className = "nested-wrap";
+
                 var nestedTable = document.createElement("table");
-                nestedTable.className = "nested-table";
-                nestedTable.style.marginTop = "10px";
-                nestedTable.style.width = "95%";
+                nestedTable.className = "nested";
 
-                var nestedHeaderRow = document.createElement("tr");
-                var nameHeader = document.createElement("th");
-                nameHeader.textContent = "Testcase Name";
-                nameHeader.style.fontWeight = "normal";
-                var statusHeader = document.createElement("th");
-                statusHeader.textContent = "Status";
-                statusHeader.style.fontWeight = "normal";
-                nestedHeaderRow.appendChild(nameHeader);
-                nestedHeaderRow.appendChild(statusHeader);
-                nestedTable.appendChild(nestedHeaderRow);
+                var nhead = document.createElement("thead");
+                var nhRow = document.createElement("tr");
+                ["Testcase", "Status"].forEach(function(h) {
+                    var th = document.createElement("th");
+                    th.textContent = h;
+                    nhRow.appendChild(th);
+                });
+                nhead.appendChild(nhRow);
+                nestedTable.appendChild(nhead);
 
+                var nbody = document.createElement("tbody");
                 if (entry.testcase_statuses && Array.isArray(entry.testcase_statuses)) {
-                    entry.testcase_statuses.forEach(function(testcase) {
-                        var nestedRow = document.createElement("tr");
-                        var nameCell = document.createElement("td");
-                        nameCell.textContent = testcase[0];
-                        var statusCell = document.createElement("td");
-                        statusCell.textContent = testcase[1];
-                        statusCell.className = testcase[1].toLowerCase();
-                        nestedRow.appendChild(nameCell);
-                        nestedRow.appendChild(statusCell);
-                        nestedTable.appendChild(nestedRow);
+                    // sort: failures first
+                    var sorted = entry.testcase_statuses.slice().sort(function(a, b) {
+                        var order = { 'fail': 0, 'error': 1, 'skip': 2, 'skipped': 2, 'pass': 3 };
+                        var ao = order[(a[1]||'').toLowerCase()] ?? 4;
+                        var bo = order[(b[1]||'').toLowerCase()] ?? 4;
+                        return ao - bo;
+                    });
+                    sorted.forEach(function(tc) {
+                        var tr = document.createElement("tr");
+                        var nameTd = document.createElement("td");
+                        nameTd.className = "mono";
+                        nameTd.textContent = tc[0];
+                        var statusTd = document.createElement("td");
+                        statusTd.innerHTML = statusBadge(tc[1]);
+                        tr.appendChild(nameTd);
+                        tr.appendChild(statusTd);
+                        nbody.appendChild(tr);
                     });
                 }
+                nestedTable.appendChild(nbody);
+                nestedWrap.appendChild(nestedTable);
+                details.appendChild(nestedWrap);
+                tcCell.appendChild(details);
+                row.appendChild(tcCell);
 
-                testcaseDetails.appendChild(nestedTable);
-                testcaseCell.appendChild(testcaseDetails);
-                row.appendChild(testcaseCell);
-
-                table.appendChild(row);
+                tbody.appendChild(row);
             });
 
-            // Add to the bottom container
-            bottomContainer.appendChild(resultsTitle);
-            bottomContainer.appendChild(table);
-            bottomContainer.appendChild(document.createElement("br"));
+            table.appendChild(tbody);
+            wrap.appendChild(table);
+            card.appendChild(wrap);
+            section.appendChild(card);
         }
 
         function renderAll() {
@@ -961,6 +1106,20 @@
             }
         }
 
+        /* ---------- Theme toggle ---------- */
+        function setupThemeToggle() {
+            var btn = document.getElementById('themeToggle');
+            var saved = localStorage.getItem('sonicmgmt-theme') || 'dark';
+            document.body.className = saved;
+            btn.textContent = saved === 'dark' ? '🌙 Dark' : '☀ Light';
+            btn.addEventListener('click', function() {
+                var next = document.body.classList.contains('dark') ? 'light' : 'dark';
+                document.body.className = next;
+                btn.textContent = next === 'dark' ? '🌙 Dark' : '☀ Light';
+                localStorage.setItem('sonicmgmt-theme', next);
+            });
+        }
+
         timeThresholds["dates_to_query_list"] = generateWeeklyDateStrings(timeThresholds["num_weeks_to_query"]);
         console.log(gettimestampstring() + "num_days_to_display: ", timeThresholds["num_days_to_display"]);
         generateResultFileURLs();
@@ -968,6 +1127,7 @@
 
         window.onload = function () {
             console.log(gettimestampstring() + "window.onload");
+            setupThemeToggle();
             doMaybeRenderAll();
 
             setInterval(function() {
