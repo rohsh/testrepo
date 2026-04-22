@@ -113,7 +113,7 @@
 
     <script>
         var branches = [
-            "master",
+            "main",
             "202611",
             "202605",
             "202511",
@@ -122,7 +122,7 @@
         ];
 
         var branch_display_expanded = {
-            "master": 1,
+            "main": 1,
             "202611": 0,
             "202605": 0,
             "202511": 0,
@@ -135,15 +135,18 @@
         ];
 
         columns = columns.concat([
+            ["Format", "format"],
             ["Org", "org"],
-            ["File", "file"],
+            ["Branch", "branch"],
             ["Build", "os_version"],
+            ["Testbed", "testbed"],
             ["Topo", "topology"],
             ["Sku", "platform"],
+            ["File", "file"],
             ["Duration", "duration"],
             ["Total", "total_testcases"],
-            ["Pass", "passed_testcases"],
-            ["Fail/Err", "failed_testcases"],
+            ["Error", "error_testcases"],
+            ["Fail", "failed_testcases"],
             ["Skip", "skipped_testcases"],
             ["Testcases", "testcase_statuses"],
         ]);
@@ -157,9 +160,20 @@
         var records_json_failed = [];
         var records_json_contents = [];
 
+        const branchList = [
+            "any",
+            "main",
+            "202611",
+            "202605",
+            "202511",
+            "202505",
+            "202411",
+        ];
+        var branch_choice = "any";
+
         const orgList = [
             "any",
-            "Nexthop",
+            "org1",
         ];
         var org_choice = "any";
 
@@ -177,25 +191,27 @@
             "Fail",
             "Pass",
         ];
-        var results_status_choice = "any";
+        var results_status_choice = "Regression";
 
         const timeWindowList = [
             "1 day",
             "1 week",
             "2 week",
+            "6 week",
             "6 month",
         ];
-        var time_window_choice = "6 month";
+        var time_window_choice = "6 week";
         const timeWindowToNumDays = {
             "1 day": 1,
             "1 week": 7,
             "2 week": 14,
+            "6 week": 42,
             "6 month": 180,
         };
 
         var timeThresholds = {
-            "num_days_to_query" : 180,
-            "num_days_to_display" : 180,
+            "num_weeks_to_query" : 6,
+            "num_days_to_display" : 42, // 6 weeks = 42 days
             "dates_to_query_list" : [],
             "dates_to_display_list" : [],
         };
@@ -222,6 +238,57 @@
            return date_strings;
         }
 
+        function generateWeeklyDateStrings(numWeeks) {
+            var week_strings = [];
+            var now = new Date();
+            var utcNow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+
+            for (var i = 0; i < numWeeks; i++) {
+                // Calculate the date for the start of this week (going back i weeks)
+                var weeksBack = new Date(utcNow.getFullYear(), utcNow.getMonth(), utcNow.getDate() - (i * 7));
+                var year = weeksBack.getFullYear();
+                var month = weeksBack.getMonth() + 1; // getMonth() is 0-indexed
+
+                // Pad month with leading zero
+                var monthStr = month < 10 ? "0" + month : "" + month;
+
+                // Calculate which week of the month this is
+                var dayOfMonth = weeksBack.getDate();
+                var weekOfMonth = Math.ceil(dayOfMonth / 7);
+
+                var week_string = year + "/" + monthStr + "/week" + weekOfMonth;
+                week_strings.push(week_string);
+            }
+
+            console.log(gettimestampstring() + "week_strings: ", week_strings);
+            return week_strings;
+        }
+
+        function dateToWeekFormat(dateStr) {
+            // dateStr is in format "M/D" (e.g., "4/21" or "4/7")
+            var parts = dateStr.split("/");
+            var month = parseInt(parts[0]);
+            var day = parseInt(parts[1]);
+
+            // Get current year (or determine year based on current date)
+            var now = new Date();
+            var currentMonth = now.getMonth() + 1;
+            var year = now.getFullYear();
+
+            // If the month is greater than current month, it must be from previous year
+            if (month > currentMonth) {
+                year = year - 1;
+            }
+
+            // Pad month with leading zero
+            var monthStr = month < 10 ? "0" + month : "" + month;
+
+            // Calculate which week of the month
+            var weekOfMonth = Math.ceil(day / 7);
+
+            return year + "/" + monthStr + "/week" + weekOfMonth;
+        }
+
         function generateResultFileURLs() {
             var url_prefix = "https://raw.githubusercontent.com/rohsh/testrepo/main/data/";
             timeThresholds.dates_to_query_list.forEach(function(date_string) {
@@ -245,7 +312,8 @@
                         if (response.ok) {
                             return response.text(); // Get as text first to see what we're getting
                         } else {
-                            throw new Error(`HTTP ${response.status}`);
+                            // Return object with status instead of throwing to avoid stack trace
+                            return Promise.reject({ status: response.status, url: url });
                         }
                     })
                     .then(text => {
@@ -262,7 +330,14 @@
                         display_pending = 1;
                     })
                     .catch(error => {
-                        console.log(gettimestampstring() + "Fetch error for", url, ":", error);
+                        // Only log simple message for 404, suppress stack trace
+                        if (error.status === 404) {
+                            console.log(gettimestampstring() + "File not found (404):", error.url);
+                        } else if (error.status) {
+                            console.log(gettimestampstring() + "HTTP error", error.status, "for", error.url);
+                        } else {
+                            console.log(gettimestampstring() + "Fetch error for", url, ":", error.message || error);
+                        }
                         records_json_failed.push(url);
                         display_pending = 1;
                     });
@@ -284,6 +359,11 @@
                         branch_results_dict[branch] = [];
                     }
 
+                    // Apply Branch filter
+                    if (branch_choice != "any" && entry.branch != branch_choice) {
+                        return;
+                    }
+
                     // Apply Org filter
                     if (org_choice != "any" && entry.org != org_choice) {
                         return;
@@ -296,7 +376,7 @@
 
                     // Apply Result Status filter
                     if (results_status_choice != "any") {
-                        var failed_run = (parseInt(entry.failed_testcases || 0) > 0) || (parseInt(entry.errored_testcases || 0) > 0);
+                        var failed_run = (parseInt(entry.failed_testcases || 0) > 0) || (parseInt(entry.error_testcases || 0) > 0);
                         if (results_status_choice == "Pass" && failed_run) {
                             return;
                         }
@@ -306,10 +386,11 @@
                         }
                     }
 
-                    // Apply time window filter
-                    display_time = entry.time.split(" ")[0].substring(5);
-                    //console.log(gettimestampstring() + "display_time: ", display_time);
-                    if (!timeThresholds["dates_to_display_list"].includes(display_time)) {
+                    // Apply time window filter based on number of days
+                    var entryDate = new Date(entry.time.split(" ")[0]);
+                    var now = new Date();
+                    var daysDiff = Math.floor((now - entryDate) / (1000 * 60 * 60 * 24));
+                    if (daysDiff >= timeThresholds["num_days_to_display"]) {
                         return;
                     }
 
@@ -358,11 +439,11 @@
                         branch_regressions[branch][filename][topo]["regression_status"] = false;
                         branch_regressions[branch][filename][topo]["entries"] = [entry];
                     } else if (branch_regressions[branch][filename][topo]["entries"].length == 1) {
-                        branch_regressions[branch][filename][topo]["entries"].push(recent_entry);
-
                         var recent_entry = branch_regressions[branch][filename][topo]["entries"][0];
-                        var recent_entry_failed_run = (parseInt(recent_entry.failed_testcases || 0) > 0) || (parseInt(recent_entry.errored_testcases || 0) > 0);
-                        var current_entry_failed_run = (parseInt(entry.failed_testcases || 0) > 0) || (parseInt(entry.errored_testcases || 0) > 0);
+                        branch_regressions[branch][filename][topo]["entries"].push(entry);
+
+                        var recent_entry_failed_run = (parseInt(recent_entry.failed_testcases || 0) > 0) || (parseInt(recent_entry.error_testcases || 0) > 0);
+                        var current_entry_failed_run = (parseInt(entry.failed_testcases || 0) > 0) || (parseInt(entry.error_testcases || 0) > 0);
                         if (recent_entry_failed_run && !current_entry_failed_run) {
                             branch_regressions[branch][filename][topo]["regression_status"] = true;
                             branch_regressions[branch][filename][topo]["entries"] = [];
@@ -408,6 +489,53 @@
                 branch_and_results_tuples_list = branch_and_results_tuples_list_regression_filtered;
                 console.log(gettimestampstring() + "branch_and_results_tuples_list_regression_filtered: ", branch_and_results_tuples_list_regression_filtered);
             };
+        }
+
+        function getBranchOptionsSubContainer() {
+            const branchTitle = document.createElement("h2");
+            branchTitle.style.color = "#87736A";
+            branchTitle.style.marginBottom = "0";
+            branchTitle.style.marginRight = "10px";
+            branchTitle.style.fontSize = "16px";
+            branchTitle.innerHTML = "Branch";
+
+            function updateBranchSelectTitleAndData() {
+                console.log("updateBranchSelectTitleAndData()");
+                branch_choice = branchSelect.value;
+                console.log("branch_choice: ", branch_choice);
+                display_pending = 1;
+                console.log(gettimestampstring() + "display_pending: ", display_pending);
+            }
+            // Create dropdown for Branch
+            const branchSelect = document.createElement("select");
+            branchSelect.id = "branchSelect";
+            branchSelect.style.marginLeft = "10px";
+            branchSelect.style.padding = "5px";
+            branchSelect.style.backgroundColor = "#E9DEDE";
+            branchSelect.style.color = "#000";
+            branchSelect.style.border = "1px solid #87736A";
+            branchSelect.style.borderRadius = "3px";
+            // Add branch options from branchList
+            branchList.forEach(branch => {
+                const option = document.createElement("option");
+                option.value = branch;
+                option.textContent = branch;
+                option.style.fontSize = "12px"; // Reduce font size
+                if (branch === branch_choice) {
+                    option.selected = true; // Set default selection
+                }
+                branchSelect.appendChild(option);
+            });
+            // Add event listener for dropdown changes
+            branchSelect.addEventListener("change", updateBranchSelectTitleAndData);
+
+            const branchContainer = document.createElement("div");
+            branchContainer.style.display = "flex";
+            branchContainer.style.alignItems = "center";
+            branchContainer.style.justifyContent = "flex-start";
+            branchContainer.appendChild(branchTitle);
+            branchContainer.appendChild(branchSelect);
+            return branchContainer;
         }
 
         function getOrgOptionsSubContainer() {
@@ -563,7 +691,6 @@
                 time_window_choice = timeWindowSelect.value;
                 console.log("time_window_choice: ", time_window_choice);
                 timeThresholds["num_days_to_display"] = timeWindowToNumDays[time_window_choice];
-                timeThresholds["dates_to_display_list"] = generateDateStrings(timeThresholds["num_days_to_display"], false);
 
                 display_pending = 1;
                 console.log(gettimestampstring() + "display_pending: ", display_pending);
@@ -619,10 +746,11 @@
             innerFiltersContainer.style.gap = "20px";
 
             innerFiltersContainer.appendChild(filtersTitle);
-            innerFiltersContainer.appendChild(getOrgOptionsSubContainer());
+            innerFiltersContainer.appendChild(getBranchOptionsSubContainer());
             innerFiltersContainer.appendChild(getTopoOptionsSubContainer());
             innerFiltersContainer.appendChild(getResultStatusOptionsSubContainer());
             innerFiltersContainer.appendChild(getTimeWindowOptionsSubContainer());
+            innerFiltersContainer.appendChild(getOrgOptionsSubContainer());
             filterContainer.appendChild(innerFiltersContainer);
         }
 
@@ -631,7 +759,9 @@
             var bottomContainer = document.querySelector('.bottom');
             bottomContainer.innerHTML = '';
 
-            // In the lower section add a table for each branch.
+            // Combine all results from all branches into a single list
+            var allResults = [];
+            var totalCount = 0;
             for (var i = 0; i < branch_and_results_tuples_list.length; i++) {
                 var branch = branch_and_results_tuples_list[i][0];
                 var results = branch_and_results_tuples_list[i][1];
@@ -642,183 +772,171 @@
                     continue;
                 }
 
-                if (results.length === 0) {
-                    continue;
-                }
-
-                console.log(gettimestampstring() + "branch: (", branch, ") #results ", results.length);
-
-                // Add a title for the branch
-                var branchTitle = document.createElement("h2");
-                branchTitle.innerHTML = branch;
-                branchTitle.style.color = "black";
-                branchTitle.style.marginBottom = "0";
-                branchTitle.style.marginRight = "10px";
-                branchTitle.style.fontSize = "20px";
-                branchTitle.style.fontWeight = "bold";
-
-                // Create details element for expandable table
-                var details = document.createElement("details");
-                if (branch_display_expanded[branch]) {
-                    details.open = true;
-                    //console.log(`Branch ${branch} is now ${details.open ? 'expanded' : 'collapsed'}`);
-                }
-
-                // Add event listener to track when user expands/collapses
-                details.addEventListener('toggle', (function(currentBranch, details) {
-                    return function() {
-                        //console.log(`Branch ${currentBranch} is now ${details.open ? 'expanded' : 'collapsed'}`);
-                        branch_display_expanded[currentBranch] = details.open;
-                    };
-                })(branch, details));
-
-                // Create summary element
-                var summary = document.createElement("summary");
-                summary.innerHTML = "Expand";
-                summary.style.cursor = "pointer";
-                summary.style.fontWeight = "normal";
-                details.appendChild(summary);
-
-                // Create table
-                var table = document.createElement("table");
-                table.style.borderCollapse = "collapse";
-                table.style.width = "100%";
-
-                // Create header row
-                var headerRow = document.createElement("tr");
-                var headers = ["Time", "Org", "File", "Build", "Topo", "Sku", "Duration", "Total", "Pass", "Fail/Err", "Skip", "Testcases"];
-                headers.forEach(function(header) {
-                    var th = document.createElement("th");
-                    th.innerHTML = header;
-                    headerRow.appendChild(th);
-                });
-                table.appendChild(headerRow);
-
-                // Add data rows
-                results.forEach(function(entry) {
-                    var row = document.createElement("tr");
-
-                    var failed_run = (parseInt(entry.failed_testcases || 0) > 0) || (parseInt(entry.errored_testcases || 0) > 0);
-
-                    // Apply red color to the entire row if it's a failed run
-                    if (failed_run) {
-                        row.style.color = 'red';
-                    }
-
-                    // Create all cells except testcase_statuses
-                    var timeCell = document.createElement("td");
-                    timeCell.textContent = entry.time ? entry.time.substring(5) : '';
-                    row.appendChild(timeCell);
-
-                    var orgCell = document.createElement("td");
-                    orgCell.textContent = entry.org;
-                    row.appendChild(orgCell);
-
-                    var fileCell = document.createElement("td");
-                    fileCell.textContent = entry.file;
-                    row.appendChild(fileCell);
-
-                    var buildCell = document.createElement("td");
-                    buildCell.textContent = entry.os_version;
-                    row.appendChild(buildCell);
-
-                    var topoCell = document.createElement("td");
-                    topoCell.textContent = entry.topology;
-                    row.appendChild(topoCell);
-
-                    var skuCell = document.createElement("td");
-                    skuCell.textContent = entry.platform;
-                    row.appendChild(skuCell);
-
-                    var durationCell = document.createElement("td");
-                    durationCell.textContent = entry.duration;
-                    row.appendChild(durationCell);
-
-                    var totalCell = document.createElement("td");
-                    totalCell.textContent = entry.total_testcases;
-                    row.appendChild(totalCell);
-
-                    var passCell = document.createElement("td");
-                    passCell.textContent = entry.passed_testcases;
-                    row.appendChild(passCell);
-
-                    var failCell = document.createElement("td");
-                    failCell.textContent = entry.failed_testcases;
-                    row.appendChild(failCell);
-
-                    var skipCell = document.createElement("td");
-                    skipCell.textContent = entry.skipped_testcases;
-                    row.appendChild(skipCell);
-
-                    // Create testcase_statuses cell with nested collapsible table
-                    var testcaseCell = document.createElement("td");
-                    var testcaseSummary = document.createElement("summary");
-                    testcaseSummary.textContent = "Expand";
-                    testcaseSummary.style.cursor = "pointer";
-                    testcaseSummary.style.fontWeight = "normal";
-
-                    if (failed_run) {
-                        testcaseSummary.style.color = 'red';
-                    } else {
-                        testcaseSummary.style.color = 'black';
-                    }
-
-                    var testcaseDetails = document.createElement("details");
-                    testcaseDetails.appendChild(testcaseSummary);
-                    testcaseDetails.style.color = 'black';
-                    testcaseSummary.style.fontWeight = "normal";
-
-                    var nestedTable = document.createElement("table");
-                    nestedTable.className = "nested-table";
-                    nestedTable.style.marginTop = "10px";
-                    nestedTable.style.width = "95%";
-
-                    var nestedHeaderRow = document.createElement("tr");
-                    var nameHeader = document.createElement("th");
-                    nameHeader.textContent = "Testcase Name";
-                    nameHeader.style.fontWeight = "normal";
-                    var statusHeader = document.createElement("th");
-                    statusHeader.textContent = "Status";
-                    statusHeader.style.fontWeight = "normal";
-                    nestedHeaderRow.appendChild(nameHeader);
-                    nestedHeaderRow.appendChild(statusHeader);
-                    nestedTable.appendChild(nestedHeaderRow);
-
-                    if (entry.testcase_statuses && Array.isArray(entry.testcase_statuses)) {
-                        entry.testcase_statuses.forEach(function(testcase) {
-                            var nestedRow = document.createElement("tr");
-                            var nameCell = document.createElement("td");
-                            nameCell.textContent = testcase[0];
-                            var statusCell = document.createElement("td");
-                            statusCell.textContent = testcase[1];
-                            statusCell.className = testcase[1].toLowerCase();
-                            nestedRow.appendChild(nameCell);
-                            nestedRow.appendChild(statusCell);
-                            nestedTable.appendChild(nestedRow);
-                        });
-                    }
-
-                    testcaseDetails.appendChild(nestedTable);
-                    testcaseCell.appendChild(testcaseDetails);
-                    row.appendChild(testcaseCell);
-
-                    table.appendChild(row);
-                });
-
-                // Add table to details element
-                details.appendChild(table);
-
-                // Add to the bottom container
-                bottomContainer.appendChild(branchTitle);
-                bottomContainer.appendChild(details);
-
-                // Add spacing between branch sections
-                var spacer = document.createElement("div");
-                spacer.style.marginBottom = "20px";
-                bottomContainer.appendChild(spacer);
+                totalCount += results.length;
+                allResults = allResults.concat(results);
             }
 
-            // add a break after each table
+            if (allResults.length === 0) {
+                console.log(gettimestampstring() + "No results to display");
+                return;
+            }
+
+            // Sort all results by time in reverse (most recent first)
+            allResults.sort((a, b) => new Date(b.time) - new Date(a.time));
+
+            console.log(gettimestampstring() + "Total results: ", allResults.length);
+
+            // Add a title for the combined results
+            var resultsTitle = document.createElement("h2");
+            resultsTitle.innerHTML = "Test Results";
+            resultsTitle.style.color = "black";
+            resultsTitle.style.marginBottom = "0";
+            resultsTitle.style.marginRight = "10px";
+            resultsTitle.style.fontSize = "20px";
+            resultsTitle.style.fontWeight = "bold";
+
+            // Create table
+            var table = document.createElement("table");
+            table.style.borderCollapse = "collapse";
+            table.style.width = "100%";
+
+            // Create header row
+            var headerRow = document.createElement("tr");
+            var headers = ["Time", "Branch", "Org", "File", "Build", "Topo", "Sku", "Duration", "Total", "Error", "Fail", "Skip", "Testcases"];
+            headers.forEach(function(header) {
+                var th = document.createElement("th");
+                th.innerHTML = header;
+                headerRow.appendChild(th);
+            });
+            table.appendChild(headerRow);
+
+            // Add data rows for all results
+            allResults.forEach(function(entry) {
+                var row = document.createElement("tr");
+
+                var failed_run = (parseInt(entry.failed_testcases || 0) > 0) || (parseInt(entry.error_testcases || 0) > 0);
+
+                // Apply red color to the entire row if it's a failed run
+                if (failed_run) {
+                    row.style.color = 'red';
+                }
+
+                // Create all cells except testcase_statuses
+                var timeCell = document.createElement("td");
+                timeCell.textContent = entry.time ? entry.time.substring(5) : '';
+                row.appendChild(timeCell);
+
+                var branchCell = document.createElement("td");
+                branchCell.textContent = entry.branch;
+                row.appendChild(branchCell);
+
+                var orgCell = document.createElement("td");
+                orgCell.textContent = entry.org;
+                row.appendChild(orgCell);
+
+                var fileCell = document.createElement("td");
+                fileCell.textContent = entry.file;
+                row.appendChild(fileCell);
+
+                var buildCell = document.createElement("td");
+                buildCell.textContent = entry.os_version;
+                row.appendChild(buildCell);
+
+                var topoCell = document.createElement("td");
+                topoCell.textContent = entry.topology;
+                row.appendChild(topoCell);
+
+                var skuCell = document.createElement("td");
+                skuCell.textContent = entry.hwsku;
+                row.appendChild(skuCell);
+
+                var durationCell = document.createElement("td");
+                durationCell.textContent = entry.duration;
+                row.appendChild(durationCell);
+
+                var totalCell = document.createElement("td");
+                totalCell.textContent = entry.total_testcases;
+                row.appendChild(totalCell);
+
+                var errorCell = document.createElement("td");
+                errorCell.textContent = entry.error_testcases;
+                row.appendChild(errorCell);
+
+                var failCell = document.createElement("td");
+                failCell.textContent = entry.failed_testcases;
+                row.appendChild(failCell);
+
+                var skipCell = document.createElement("td");
+                skipCell.textContent = entry.skipped_testcases;
+                row.appendChild(skipCell);
+
+                // Create testcase_statuses cell with nested collapsible table
+                var testcaseCell = document.createElement("td");
+                var testcaseSummary = document.createElement("summary");
+                testcaseSummary.textContent = "Expand";
+                testcaseSummary.style.cursor = "pointer";
+                testcaseSummary.style.fontWeight = "normal";
+
+                if (failed_run) {
+                    testcaseSummary.style.color = 'red';
+                } else {
+                    testcaseSummary.style.color = 'black';
+                }
+
+                var testcaseDetails = document.createElement("details");
+                testcaseDetails.appendChild(testcaseSummary);
+                testcaseDetails.style.color = 'black';
+                testcaseSummary.style.fontWeight = "normal";
+
+                // Add toggle event listener to change text between Expand/Collapse
+                testcaseDetails.addEventListener('toggle', function() {
+                    if (testcaseDetails.open) {
+                        testcaseSummary.textContent = "Collapse";
+                    } else {
+                        testcaseSummary.textContent = "Expand";
+                    }
+                });
+
+                var nestedTable = document.createElement("table");
+                nestedTable.className = "nested-table";
+                nestedTable.style.marginTop = "10px";
+                nestedTable.style.width = "95%";
+
+                var nestedHeaderRow = document.createElement("tr");
+                var nameHeader = document.createElement("th");
+                nameHeader.textContent = "Testcase Name";
+                nameHeader.style.fontWeight = "normal";
+                var statusHeader = document.createElement("th");
+                statusHeader.textContent = "Status";
+                statusHeader.style.fontWeight = "normal";
+                nestedHeaderRow.appendChild(nameHeader);
+                nestedHeaderRow.appendChild(statusHeader);
+                nestedTable.appendChild(nestedHeaderRow);
+
+                if (entry.testcase_statuses && Array.isArray(entry.testcase_statuses)) {
+                    entry.testcase_statuses.forEach(function(testcase) {
+                        var nestedRow = document.createElement("tr");
+                        var nameCell = document.createElement("td");
+                        nameCell.textContent = testcase[0];
+                        var statusCell = document.createElement("td");
+                        statusCell.textContent = testcase[1];
+                        statusCell.className = testcase[1].toLowerCase();
+                        nestedRow.appendChild(nameCell);
+                        nestedRow.appendChild(statusCell);
+                        nestedTable.appendChild(nestedRow);
+                    });
+                }
+
+                testcaseDetails.appendChild(nestedTable);
+                testcaseCell.appendChild(testcaseDetails);
+                row.appendChild(testcaseCell);
+
+                table.appendChild(row);
+            });
+
+            // Add to the bottom container
+            bottomContainer.appendChild(resultsTitle);
+            bottomContainer.appendChild(table);
             bottomContainer.appendChild(document.createElement("br"));
         }
 
@@ -843,9 +961,8 @@
             }
         }
 
-        timeThresholds["dates_to_query_list"] = generateDateStrings(timeThresholds["num_days_to_query"], true);
-        timeThresholds["dates_to_display_list"] = generateDateStrings(timeThresholds["num_days_to_display"], false);
-        console.log(gettimestampstring() + "dates_to_display_list: ", timeThresholds["dates_to_display_list"]);
+        timeThresholds["dates_to_query_list"] = generateWeeklyDateStrings(timeThresholds["num_weeks_to_query"]);
+        console.log(gettimestampstring() + "num_days_to_display: ", timeThresholds["num_days_to_display"]);
         generateResultFileURLs();
         getResultFileContents();
 
