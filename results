@@ -1,0 +1,51 @@
+#!/usr/bin/env python3
+import click
+from helpers.results_helper import Results
+
+@click.group()
+def cli():
+    """Manage test results"""
+    pass
+
+
+@cli.command()
+@click.option('--org', required=True, help='Organization name')
+@click.option('--sku-map', multiple=True, help='SKU mapping in format ORIGINAL:MAPPED (can be specified multiple times)')
+@click.option('--src', required=True, help='Comma-separated list of XML files, directories, archives, or URLs')
+@click.option('--dry-run', is_flag=True, help='Show what would be processed without actually processing')
+def add(org, sku_map, src, dry_run):
+    """Add test results from tr.xml files in the specified sources.
+
+    Sources can be:
+    - Local XML files (tr.xml)
+    - Local directories (scanned recursively for XML files)
+    - Local or remote archives (.tar.gz, .tar, .zip, etc.)
+    - URLs pointing to XML files or archives
+
+    Examples:
+
+    \b
+    results add --org ORG1 --sku-map ABC-2500--32:sku1 --sku-map ABC-2500--64:sku2 --src /path/to/dir
+    results add --org ORG1 --sku-map ABC-2500--32:sku1 --src /path/to/dir --dry-run
+    results add --org org1 --sku-map NH-4010:org1-sku1 --src /tmp/foo3,/tmp/bar.xml,/tmp/foo1.tar.gz
+    results add --org org1 --sku-map NH-4010:org1-sku1 --src http://example.com/test.tar.gz
+    """
+    results = Results(org, sku_map)
+
+    if not results.check_params():
+        return
+
+    if not dry_run:
+        results.results_helper.do_git_pull(org)
+
+    # Split comma-separated sources
+    sources = [s.strip() for s in src.split(',')]
+    status = results.results_add_from_sources(sources)
+    if not status:
+        return
+
+    if not dry_run:
+        results.results_helper.do_git_push(org)
+
+if __name__ == '__main__':
+    cli()
