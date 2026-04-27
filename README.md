@@ -164,3 +164,4 @@ for every enabled org.
 
 ## Theme
 The page ships both dark and light themes driven by CSS custom properties; the selection persists in `localStorage`.
+
