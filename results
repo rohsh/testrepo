@@ -25,10 +25,10 @@ def add(org, sku_map, src, dry_run):
     Examples:
 
     \b
-    results add --org ORG1 --sku-map ABC-2500--32:sku1 --sku-map ABC-2500--64:sku2 --src /path/to/dir
-    results add --org ORG1 --sku-map ABC-2500--32:sku1 --src /path/to/dir --dry-run
-    results add --org org1 --sku-map NH-4010:org1-sku1 --src /tmp/foo3,/tmp/bar.xml,/tmp/foo1.tar.gz
-    results add --org org1 --sku-map NH-4010:org1-sku1 --src http://example.com/test.tar.gz
+    results add --org ORG1 --sku-map ABC-2500-32:sku1 --sku-map ABC-2500-64:sku2 --src /path/to/dir
+    results add --org ORG1 --sku-map ABC-2500-32:sku1 --src /path/to/dir --dry-run
+    results add --org org1 --sku-map ABC-2500-32:org1-sku1 --src /tmp/foo3,/tmp/bar.xml,/tmp/foo1.tar.gz
+    results add --org org1 --sku-map ABC-2500-32:org1-sku1 --src http://example.com/test.tar.gz
     """
     results = Results(org, sku_map)
 

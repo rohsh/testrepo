@@ -49,20 +49,20 @@ vendor-specific part numbers out of the public dataset.
 ```
 # Ingest a directory, mapping two physical SKUs to org-prefixed aliases
 ./results add --org org1 \
-  --sku-map ABC-2500--32:sku1 \
-  --sku-map ABC-2500--64:sku2 \
+  --sku-map ABC-2500-32:sku1 \
+  --sku-map ABC-2500-64:sku2 \
   --src /path/to/tr_dir
 
 # Mix local files, directories, and archives
-./results add --org org1 --sku-map NH-4010:org1-sku1 \
+./results add --org org1 --sku-map ABC-2500-32:org1-sku1 \
   --src /tmp/foo3,/tmp/bar.xml,/tmp/foo1.tar.gz
 
 # Pull an archive from a URL
-./results add --org org1 --sku-map NH-4010:org1-sku1 \
+./results add --org org1 --sku-map ABC-2500-32:org1-sku1 \
   --src http://example.com/test.tar.gz
 
 # Dry-run (no commit/push)
-./results add --org org1 --sku-map ABC-2500--32:sku1 \
+./results add --org org1 --sku-map ABC-2500-32:sku1 \
   --src /path/to/dir --dry-run
 ```
 
